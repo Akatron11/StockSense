@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockSense — Prototip (wireframe) · index</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .wrap{max-width:920px;margin:0 auto;padding:32px 22px;}
+  h1{font-size:22px;font-weight:500;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+  .grp{margin-top:26px;}
+  .grp h2{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;}
+  .links{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:720px){.links{grid-template-columns:1fr;}}
+  a.card{display:block;text-decoration:none;color:var(--ink);background:var(--panel);
+        border:1px solid var(--line-soft);border-radius:var(--radius);padding:14px 16px;font-size:14px;}
+  a.card:hover{border-color:var(--line);}
+  a.card .m{display:block;color:var(--muted);font-size:11px;margin-top:5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>StockSense — Prototip</h1>
+  <div class="sub">Wireframe iskeletler · nötr/markasız · gerçek veri yok. Kaynak: SRS UC-01–UC-23.</div>
+
+  <div class="grp">
+    <h2>Genel</h2>
+    <div class="links">
+      <a class="card" href="login.html">Login<span class="m">giriş · TR/EN</span></a>
+    </div>
+  </div>
+
+  <div class="grp">
+    <h2>Roller — kabuk + pano</h2>
+    <div class="links">
+      <a class="card" href="sef-dashboard.html">Operasyon Şefi<span class="m">pano · zil · kasaya geç</span></a>
+      <a class="card" href="shube-mudur-dashboard.html">Şube Müdürü<span class="m">kalıtımlı pano</span></a>
+      <a class="card" href="seller-manager-dashboard.html">Seller Manager<span class="m">pano · layout önizleme</span></a>
+      <a class="card" href="stok-manager-dashboard.html">Stock Manager<span class="m">stok listesi · eşik</span></a>
+      <a class="card" href="genel-mudur-dashboard.html">Genel Müdür<span class="m">şirket panosu</span></a>
+      <a class="card" href="satici-yonetici-panel.html">Satıcı Yöneticisi<span class="m">tenant · Day-0 · branding</span></a>
+      <a class="card" href="sirket-it-panel.html">Şirket IT<span class="m">hesap override</span></a>
+    </div>
+  </div>
+
+  <div class="grp">
+    <h2>POS / Satış</h2>
+    <div class="links">
+      <a class="card" href="kasiyer-pos.html">Kasiyer POS<span class="m">satış · iade/PIN · ödeme</span></a>
+    </div>
+  </div>
+
+  <div class="grp">
+    <h2>Stok / İşlem</h2>
+    <div class="links">
+      <a class="card" href="urun-katalogu.html">Ürün Kataloğu<span class="m">UC-06</span></a>
+      <a class="card" href="fiyat-yonetimi.html">Fiyat Yönetimi<span class="m">UC-07</span></a>
+      <a class="card" href="merkez-depo-talebi.html">Merkez Depo Talebi<span class="m">UC-09</span></a>
+      <a class="card" href="skt-indirim-karari.html">SKT / İndirim Kararı<span class="m">UC-12</span></a>
+    </div>
+  </div>
+
+  <div class="grp">
+    <h2>Raporlama / Layout</h2>
+    <div class="links">
+      <a class="card" href="satis-raporu.html">Satış Raporu<span class="m">UC-13</span></a>
+      <a class="card" href="en-cok-az-satan.html">En Çok/Az Satan<span class="m">UC-14</span></a>
+      <a class="card" href="layout-onerisi.html">Layout Önerisi<span class="m">UC-15</span></a>
+      <a class="card" href="kpi-raporu.html">Kâr Marjı / KPI<span class="m">UC-16</span></a>
+    </div>
+  </div>
+
+  <div class="grp">
+    <h2>Hesap / Personel</h2>
+    <div class="links">
+      <a class="card" href="hesap-yonetimi.html">Hesap Yönetimi<span class="m">UC-18</span></a>
+      <a class="card" href="personel-kaydi.html">Personel Kaydı<span class="m">UC-20 · login'siz</span></a>
+      <a class="card" href="vardiya-takvimi.html">Vardiya Takvimi<span class="m">UC-21</span></a>
+      <a class="card" href="kasaya-gec.html">Kasaya Geç<span class="m">UC-05 · terminal seç</span></a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

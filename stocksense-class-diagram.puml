@@ -1,0 +1,106 @@
+@startuml StockSense_ClassDiagram
+skinparam classAttributeIconSize 0
+
+class Company {
+  id : PK
+  name
+}
+
+class Region {
+  id : PK
+  name
+  company_id : FK
+}
+
+class Branch {
+  id : PK
+  name
+  region_id : FK
+}
+
+class Product {
+  id : PK
+  name
+  sku
+  category
+  default_price
+  cost_price
+  best_before_date
+}
+
+class Stock {
+  product_id : FK, PK
+  branch_id : FK, PK
+  quantity
+  low_stock_threshold
+  price_override : nullable
+}
+
+class Employee {
+  id : PK
+  first_name
+  last_name
+  username : nullable
+  password_hash : nullable
+  role
+  branch_id : FK, nullable
+  region_id : FK, nullable
+  company_id : FK, nullable
+  age
+  address
+  manager_pin : nullable
+}
+
+class Sale {
+  id : PK
+  sale_date
+  branch_id : FK
+  employee_id : FK
+}
+
+class SaleItem {
+  id : PK
+  sale_id : FK
+  product_id : FK
+  quantity
+  line_total
+}
+
+class Shift {
+  id : PK
+  employee_id : FK
+  shift_date
+  start_time
+  end_time
+  is_day_off
+}
+
+class CompanyFeature {
+  company_id : FK
+  feature_name
+  enabled
+}
+
+class CompanyBranding {
+  company_id : FK, PK
+  logo_url
+  primary_color
+  display_name
+}
+
+Company "1" -- "*" Region
+Region "1" -- "*" Branch
+Branch "1" -- "*" Stock
+Product "1" -- "*" Stock
+Branch "0..1" -- "*" Employee
+Region "0..1" -- "*" Employee
+Company "0..1" -- "*" Employee
+Employee "1" -- "*" Sale
+Branch "1" -- "*" Sale
+Sale "1" -- "*" SaleItem
+Product "1" -- "*" SaleItem
+Employee "1" -- "*" Shift
+Company "1" -- "*" CompanyFeature
+Company "1" -- "1" CompanyBranding
+
+@enduml

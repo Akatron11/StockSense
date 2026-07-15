@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockSense — Kâr Marjı / KPI (wireframe)</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .kpi .thead,.kpi .trow{grid-template-columns:2fr 1fr 1fr 1fr 1fr;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="logo">LOGO</div>
+    <div class="rail-role">Genel Müdür</div>
+    <ul class="nav">
+      <li><span class="ic"></span> Ana sayfa</li>
+      <li><span class="ic"></span> Ürün kataloğu</li>
+      <li><span class="ic"></span> Satış raporları</li>
+      <li class="active"><span class="ic"></span> Kâr marjı / KPI</li>
+      <li><span class="ic"></span> Hesap yönetimi</li>
+    </ul>
+    <div class="nav-group">Şube / bölge detayı</div>
+    <ul class="nav">
+      <li><span class="ic"></span> Stok</li>
+      <li><span class="ic"></span> Fiyat</li>
+      <li><span class="ic"></span> Layout</li>
+    </ul>
+    <div class="rail-spacer"></div>
+    <div class="rail-user"><div class="avatar"></div><div class="who"><span class="bar w85 h12"></span><span class="bar w60"></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Kâr marjı / KPI</div>
+      <div class="topbar-right">
+        <span class="brand-slot">marka alanı (subdomain)</span>
+        <div class="usermenu" id="usermenu">
+          <div class="avatar" onclick="toggleClass('usermenu')"></div>
+          <div class="usermenu-pop"><div class="um-head"><span class="bar w85 h12"></span><span class="bar w60"></span></div>
+            <div class="um-div"></div>
+            <div class="um-row">Dil / Language <span class="um-lang"><span class="on">TR</span><span class="sep"></span><span>EN</span></span></div>
+            <div class="um-div"></div><div class="um-row">Çıkış</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content kpi">
+      <div class="scope">Kapsam: şirket geneli — istenen şubeye kadar detay (default_price / cost_price)</div>
+
+      <section class="cards">
+        <div class="card"><div class="lbl">Toplam ciro</div><div class="num"></div></div>
+        <div class="card"><div class="lbl">Toplam maliyet</div><div class="num"></div></div>
+        <div class="card"><div class="lbl">Net kâr</div><div class="num"></div></div>
+        <div class="card"><div class="lbl">Net kâr marjı %</div><div class="num"></div></div>
+      </section>
+
+      <div class="panel">
+        <div class="panel-head">Kâr marjı trendi</div>
+        <div class="panel-body"><div class="chartbox">grafik alanı</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Bölge / şube kırılımı <span class="hint">detaya in</span></div>
+        <div class="panel-body">
+          <div class="thead"><span>Bölge / şube</span><span>Ciro</span><span>Maliyet</span><span>Net kâr</span><span>Marj %</span></div>
+          <div class="trow"><span class="bar w70 h12"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w40"></span><span class="bar w30"></span></div>
+          <div class="trow"><span class="bar w85 h12"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w40"></span><span class="bar w30"></span></div>
+          <div class="trow"><span class="bar w60 h12"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w40"></span><span class="bar w30"></span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

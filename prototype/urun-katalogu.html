@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockSense — Ürün Kataloğu (wireframe)</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .cat .thead,.cat .trow{grid-template-columns:2fr 1fr 1fr 1fr 1fr .7fr;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="logo">LOGO</div>
+    <div class="rail-role">Genel Müdür</div>
+    <ul class="nav">
+      <li><span class="ic"></span> Ana sayfa</li>
+      <li class="active"><span class="ic"></span> Ürün kataloğu</li>
+      <li><span class="ic"></span> Satış raporları</li>
+      <li><span class="ic"></span> Kâr marjı / KPI</li>
+      <li><span class="ic"></span> Hesap yönetimi</li>
+    </ul>
+    <div class="rail-spacer"></div>
+    <div class="rail-user"><div class="avatar"></div><div class="who"><span class="bar w85 h12"></span><span class="bar w60"></span></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Ürün kataloğu</div>
+      <div class="topbar-right">
+        <span class="brand-slot">marka alanı (subdomain)</span>
+        <div class="usermenu" id="usermenu">
+          <div class="avatar" onclick="toggleClass('usermenu')"></div>
+          <div class="usermenu-pop"><div class="um-head"><span class="bar w85 h12"></span><span class="bar w60"></span></div>
+            <div class="um-div"></div>
+            <div class="um-row">Dil / Language <span class="um-lang"><span class="on">TR</span><span class="sep"></span><span>EN</span></span></div>
+            <div class="um-div"></div><div class="um-row">Çıkış</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content cat">
+      <div class="scope">Kapsam: şirket geneli (merkezi katalog)</div>
+      <div class="panel">
+        <div class="panel-head">
+          Ürünler
+          <span class="filters"><span class="pill">Ara: ▢▢▢</span><button class="btn sm primary" onclick="openModal('urun')">Yeni ürün</button></span>
+        </div>
+        <div class="panel-body">
+          <div class="thead"><span>Ürün</span><span>SKU</span><span>Kategori</span><span>Satış f.</span><span>Maliyet</span><span></span></div>
+          <div class="trow"><span class="bar w70 h12"></span><span class="bar w60"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w50"></span><button class="btn sm ghost" onclick="openModal('urun')">Düzenle</button></div>
+          <div class="trow"><span class="bar w85 h12"></span><span class="bar w60"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w50"></span><button class="btn sm ghost" onclick="openModal('urun')">Düzenle</button></div>
+          <div class="trow"><span class="bar w60 h12"></span><span class="bar w60"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w50"></span><button class="btn sm ghost" onclick="openModal('urun')">Düzenle</button></div>
+          <div class="trow"><span class="bar w70 h12"></span><span class="bar w60"></span><span class="bar w50"></span><span class="bar w50"></span><span class="bar w50"></span><button class="btn sm ghost" onclick="openModal('urun')">Düzenle</button></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Ürün ekle/düzenle (UC-06) -->
+<div class="overlay" id="urun">
+  <div class="modal">
+    <div class="modal-head">Ürün ekle / düzenle</div>
+    <div class="modal-body">
+      <div class="field"><label>Ürün adı</label><input class="input"></div>
+      <div class="form-grid">
+        <div class="field"><label>SKU</label><input class="input"></div>
+        <div class="field"><label>Kategori</label><input class="input"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Satış fiyatı (default_price)</label><input class="input"></div>
+        <div class="field"><label>Maliyet (cost_price)</label><input class="input"></div>
+      </div>
+      <div class="field"><label>SKT (best_before_date)</label><input class="input" placeholder="gg.aa.yyyy"></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" onclick="closeModal('urun')">Vazgeç</button><button class="btn primary" onclick="closeModal('urun')">Kaydet</button></div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

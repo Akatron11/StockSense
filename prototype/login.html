@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockSense — Giriş (wireframe)</title>
+<style>
+  :root{
+    --ink:#3a3a3a; --muted:#9a9a9a; --line:#cfcfcf; --line-soft:#e2e2e2;
+    --bar:#e0e0e0; --page:#fafafa; --panel:#ffffff;
+    --radius:6px; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);
+       min-height:100vh;display:flex;flex-direction:column;}
+
+  /* dil değiştirici — sağ üst */
+  .topstrip{display:flex;justify-content:flex-end;padding:16px 22px;}
+  .lang{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:12px;}
+  .lang span{padding:6px 12px;color:var(--muted);}
+  .lang .on{background:#e4e4e4;color:var(--ink);}
+  .lang .sep{padding:0;width:1px;background:var(--line);}
+
+  /* ortalı giriş kartı */
+  .wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{width:360px;background:var(--panel);border:1px solid var(--line-soft);
+        border-radius:10px;padding:32px 30px;display:flex;flex-direction:column;gap:18px;}
+
+  .brandbox{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:4px;}
+  .logo{width:88px;height:56px;border:1px dashed var(--line);border-radius:var(--radius);
+        display:flex;align-items:center;justify-content:center;color:var(--muted);
+        font-size:12px;letter-spacing:.12em;}
+  .appname{font-size:14px;color:var(--muted);letter-spacing:.05em;}
+
+  .field{display:flex;flex-direction:column;gap:7px;}
+  .field label{font-size:13px;color:var(--ink);}
+  .input{height:40px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;}
+
+  .btn{height:42px;border:1px solid var(--line);border-radius:var(--radius);
+       background:#ececec;font-size:14px;color:var(--ink);margin-top:4px;}
+
+  .note{font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
+  .brand-slot{font-size:10px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;
+        padding:4px 8px;letter-spacing:.05em;align-self:center;}
+</style>
+</head>
+<body>
+
+  <div class="topstrip">
+    <div class="lang"><span class="on">TR</span><span class="sep"></span><span>EN</span></div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+
+      <div class="brandbox">
+        <div class="logo">LOGO</div>
+        <div class="appname">StockSense</div>
+      </div>
+
+      <div class="field">
+        <label>Kullanıcı adı</label>
+        <div class="input"></div>
+      </div>
+
+      <div class="field">
+        <label>Şifre</label>
+        <div class="input"></div>
+      </div>
+
+      <button class="btn">Giriş yap</button>
+
+      <div class="note">Şifrenizi mi unuttunuz? Şirket IT / yöneticinize başvurun.</div>
+
+      <div class="brand-slot">marka alanı — subdomain'e göre değişir</div>
+
+    </div>
+  </div>
+
+</body>
+</html>

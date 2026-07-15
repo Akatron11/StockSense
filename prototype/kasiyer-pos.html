@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockSense — Kasiyer POS (wireframe)</title>
+<style>
+  :root{
+    --ink:#3a3a3a; --muted:#9a9a9a; --line:#cfcfcf; --line-soft:#e2e2e2;
+    --bar:#e0e0e0; --bar-dark:#d0d0d0; --page:#fafafa; --panel:#ffffff; --rail:#f1f1f1;
+    --radius:6px; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
+  .bar{background:var(--bar);border-radius:3px;height:9px;display:inline-block;}
+  .h12{height:12px;} .h16{height:16px;}
+  .w40{width:40%;} .w50{width:50%;} .w60{width:60%;} .w70{width:70%;} .w85{width:85%;}
+
+  /* ---- ince POS üst barı (tam-ekran mod, sidebar yok) ---- */
+  .posbar{height:54px;border-bottom:1px solid var(--line);background:var(--panel);
+        display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+  .posbar-left{display:flex;align-items:center;gap:14px;}
+  .logo-sm{border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted);
+        font-size:11px;letter-spacing:.12em;padding:7px 12px;}
+  .role{font-size:13px;color:var(--muted);}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--bar);flex:none;cursor:pointer;}
+
+  .usermenu{position:relative;}
+  .usermenu-pop{position:absolute;top:40px;right:0;width:212px;background:var(--panel);
+        border:1px solid var(--line);border-radius:8px;padding:8px;display:none;z-index:30;}
+  .usermenu.open .usermenu-pop{display:block;}
+  .um-head{display:flex;flex-direction:column;gap:6px;padding:6px 8px 8px;}
+  .um-div{height:1px;background:var(--line-soft);margin:4px 0;}
+  .um-row{display:flex;align-items:center;justify-content:space-between;padding:9px 8px;font-size:13px;}
+  .um-lang{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:11px;}
+  .um-lang span{padding:4px 9px;color:var(--muted);}
+  .um-lang .on{background:#e4e4e4;color:var(--ink);}
+  .um-lang .sep{padding:0;width:1px;background:var(--line);}
+
+  /* ---- POS gövde ---- */
+  .pos{display:grid;grid-template-columns:1fr 320px;gap:16px;padding:18px;align-items:start;}
+  .panel{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--radius);}
+  .pad{padding:16px;}
+
+  .scan{display:flex;gap:10px;margin-bottom:14px;}
+  .scan input{flex:1;height:44px;border:1px solid var(--line);border-radius:var(--radius);
+        padding:0 14px;font-size:14px;color:var(--ink);}
+  .scan .btn{width:88px;}
+
+  .scanned{display:flex;align-items:center;gap:16px;padding:14px 16px;margin-bottom:14px;
+        border:1px dashed var(--line);border-radius:var(--radius);background:#fff;}
+  .scanned .thumb{width:44px;height:44px;background:var(--bar);border-radius:var(--radius);flex:none;}
+  .scanned .info{flex:1;display:flex;flex-direction:column;gap:8px;}
+  .skt{font-size:11px;color:var(--muted);}
+
+  .cart-head,.cart-row{display:grid;grid-template-columns:3fr 1fr 1.3fr 1.3fr .5fr;gap:10px;
+        align-items:center;padding:12px 0;border-bottom:1px solid var(--line-soft);}
+  .cart-head{font-size:11px;color:var(--muted);letter-spacing:.04em;}
+  .cart-row:last-child{border-bottom:none;}
+  .rm{width:18px;height:18px;border:1px solid var(--line);border-radius:4px;justify-self:end;}
+
+  /* sağ özet */
+  .totals .trow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+        border-bottom:1px solid var(--line-soft);font-size:13px;}
+  .totals .grand{font-size:15px;padding-top:14px;border-bottom:none;}
+  .btn{border:1px solid var(--line);border-radius:var(--radius);background:#ececec;
+        font-size:14px;color:var(--ink);height:44px;cursor:pointer;width:100%;}
+  .btn.primary{background:#d9d9d9;}
+  .btn.ghost{background:transparent;}
+  .side-actions{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+
+  /* ---- modallar ---- */
+  .overlay{position:fixed;inset:0;background:rgba(60,60,60,.35);display:none;
+        align-items:center;justify-content:center;z-index:40;padding:20px;}
+  .overlay.open{display:flex;}
+  .modal{width:420px;max-width:100%;background:var(--panel);border:1px solid var(--line);
+        border-radius:10px;overflow:hidden;}
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--line-soft);font-size:15px;}
+  .modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--line-soft);display:flex;gap:10px;justify-content:flex-end;}
+  .modal-foot .btn{width:auto;padding:0 18px;height:40px;}
+  .kv{display:flex;justify-content:space-between;font-size:13px;}
+  .paytypes{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .paytype{height:74px;border:1px solid var(--line);border-radius:var(--radius);
+        display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--ink);cursor:pointer;}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:7px;}
+  .field .pin{height:44px;border:1px solid var(--line);border-radius:var(--radius);
+        padding:0 14px;font-size:18px;letter-spacing:.5em;width:160px;}
+  .hintbox{font-size:11px;color:var(--muted);line-height:1.6;background:var(--rail);
+        border-radius:var(--radius);padding:10px 12px;}
+  .mini-list .mrow{display:flex;justify-content:space-between;align-items:center;
+        padding:9px 0;border-bottom:1px solid var(--line-soft);}
+  .mini-list .mrow:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+
+  <!-- ince üst bar -->
+  <header class="posbar">
+    <div class="posbar-left">
+      <span class="logo-sm">LOGO</span>
+      <span class="role">Kasiyer · POS</span>
+    </div>
+    <div class="posbar-right">
+      <div class="usermenu" id="usermenu">
+        <div class="avatar" onclick="document.getElementById('usermenu').classList.toggle('open')"></div>
+        <div class="usermenu-pop">
+          <div class="um-head"><span class="bar w85 h12"></span><span class="bar w60"></span></div>
+          <div class="um-div"></div>
+          <div class="um-row">Dil / Language <span class="um-lang"><span class="on">TR</span><span class="sep"></span><span>EN</span></span></div>
+          <div class="um-div"></div>
+          <div class="um-row">Çıkış</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- POS gövde -->
+  <div class="pos">
+
+    <!-- sol: arama + sepet -->
+    <section class="panel pad">
+      <div class="scan">
+        <input placeholder="Barkod okut / SKU gir">
+        <button class="btn">Ara</button>
+      </div>
+
+      <div class="scanned">
+        <div class="thumb"></div>
+        <div class="info">
+          <span class="bar w60 h16"></span>
+          <span class="bar w40"></span>
+        </div>
+        <span class="skt">SKT: ▢▢.▢▢.▢▢▢▢</span>
+      </div>
+
+      <div class="cart-head">
+        <span>Ürün</span><span>Adet</span><span>Birim fiyat</span><span>Tutar</span><span></span>
+      </div>
+      <div class="cart-row"><span class="bar w70 h12"></span><span class="bar w40"></span><span class="bar w60"></span><span class="bar w60"></span><span class="rm"></span></div>
+      <div class="cart-row"><span class="bar w85 h12"></span><span class="bar w40"></span><span class="bar w60"></span><span class="bar w60"></span><span class="rm"></span></div>
+      <div class="cart-row"><span class="bar w60 h12"></span><span class="bar w40"></span><span class="bar w60"></span><span class="bar w60"></span><span class="rm"></span></div>
+    </section>
+
+    <!-- sağ: toplam + aksiyonlar -->
+    <aside class="panel pad">
+      <div class="totals">
+        <div class="trow"><span>Ara toplam</span><span class="bar w40"></span></div>
+        <div class="trow"><span>İndirim</span><span class="bar w40"></span></div>
+        <div class="trow grand"><span>Toplam</span><span class="bar w50 h16"></span></div>
+      </div>
+      <div class="side-actions">
+        <button class="btn primary" onclick="openModal('pay')">Satışı tamamla</button>
+        <button class="btn ghost" onclick="openModal('return')">İade / Değişim</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ========== ÖDEME MODALI (satış tamamlama) ========== -->
+  <div class="overlay" id="pay">
+    <div class="modal">
+      <div class="modal-head">Ödeme — satışı tamamla</div>
+      <div class="modal-body">
+        <div class="kv"><span>Toplam</span><span class="bar w40 h16"></span></div>
+        <div>
+          <div class="field"><label>Ödeme yöntemi (mock)</label></div>
+          <div class="paytypes">
+            <div class="paytype">Nakit</div>
+            <div class="paytype">Kart</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" onclick="closeModal('pay')">Vazgeç</button>
+        <button class="btn primary" onclick="closeModal('pay')">Onayla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== İADE / DEĞİŞİM MODALI ========== -->
+  <div class="overlay" id="return">
+    <div class="modal">
+      <div class="modal-head">İade / Değişim</div>
+      <div class="modal-body">
+        <div class="field"><label>İşlem (satış) no</label><input class="pin" style="width:100%;letter-spacing:normal;font-size:14px" placeholder="Satış ara / okut"></div>
+        <div>
+          <div class="field"><label>İade edilecek ürünler</label></div>
+          <div class="mini-list">
+            <div class="mrow"><span class="bar w60 h12"></span><span class="bar w40"></span></div>
+            <div class="mrow"><span class="bar w70 h12"></span><span class="bar w40"></span></div>
+          </div>
+        </div>
+        <div class="kv"><span>İade tutarı</span><span class="bar w40 h16"></span></div>
+        <div class="hintbox">Tamamlamak için yetkili onayı (PIN) gerekir — iade, onay anında kesinleşir.</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" onclick="closeModal('return')">Vazgeç</button>
+        <button class="btn primary" onclick="closeModal('return');openModal('pin')">Tamamla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PIN ONAY MODALI (tamamlarken) ========== -->
+  <div class="overlay" id="pin">
+    <div class="modal">
+      <div class="modal-head">İade onayı — yetkili PIN</div>
+      <div class="modal-body">
+        <div class="kv"><span>İade tutarı</span><span class="bar w40 h16"></span></div>
+        <div class="kv"><span>İşlemi yapan</span><span class="bar w50"></span></div>
+        <div class="field"><label>Onaylayan PIN (4–6 hane)</label><input class="pin" placeholder="••••"></div>
+        <div class="hintbox">PIN, o şubede onay yetkisi olan kullanıcıyla eşleştirilir (Stock Manager, Seller Manager, Operasyon Şefi ya da yardımcıları). Kayda hem işlemi yapan hem onaylayan düşer.</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" onclick="closeModal('pin')">Vazgeç</button>
+        <button class="btn primary" onclick="closeModal('pin')">Onayla</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  function openModal(id){document.getElementById(id).classList.add('open');}
+  function closeModal(id){document.getElementById(id).classList.remove('open');}
+  document.addEventListener('click',function(e){
+    var m=document.getElementById('usermenu');
+    if(m && !m.contains(e.target)) m.classList.remove('open');
+  });
+</script>
+</body>
+</html>
