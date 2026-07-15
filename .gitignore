@@ -1,3 +1,8 @@
+# --- Proje-özel: paylaşılmayacak dosyalar ---
+CLAUDE.md
+.claude/
+TR dosyalar/
+
 # --- OS ---
 .DS_Store
 Thumbs.db
