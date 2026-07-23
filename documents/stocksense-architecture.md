@@ -208,6 +208,9 @@ The abstract schema in item 9 was refined with the following concrete decisions 
 - `shifts (employee_id, shift_date)` → composite index.
 - `employees.role` → index (notification targeting, item 14).
 - `stock (product_id, branch_id)` is already a composite PK, no extra index needed.
+- `employees.username` partial UNIQUE (`WHERE company_id IS NULL`) — caught during code review: the composite `(company_id, username)` constraint doesn't stop two Vendor Manager accounts (where `company_id` is always NULL) from sharing a username, since NULLs are treated as distinct under UNIQUE. A separate partial index closes this gap.
+
+**Check constraints:** `sale_items.quantity > 0` and `sale_items.line_total >= 0` — negative/zero quantity or a negative amount is rejected at the database level (added during code review).
 
 **Shift scope:** The `shifts` table only holds the **planned** shift schedule (the `start_time`/`end_time` assigned by the Operations Chief). Actual clock-in/clock-out (real attendance tracking) is out of scope — the brief does not require it, and it would be a separate feature.
 
