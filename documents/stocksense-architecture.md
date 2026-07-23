@@ -168,7 +168,7 @@ employees
   age, address, manager_pin (nullable)
 
 sales
-  id (PK), sale_date, branch_id (FK), employee_id (FK)
+  id (PK), sale_date, branch_id (FK), employee_id (FK), payment_method
 
 sale_items
   id (PK), sale_id (FK), product_id (FK), quantity, line_total
@@ -187,7 +187,48 @@ shifts
 - **`password_hash` / `username` nullable:** Staff without login (butcher, greengrocer, shelf-stocking staff, etc. — see item 13) are also kept in the same `employees` table, but these fields are left empty — they cannot log into the system. This was chosen instead of opening a separate "login-less staff" table because it allows the `shifts` table to reference both logged-in and login-less staff with a single `employee_id` (consistent with the rationale of avoiding polymorphic association).
 - **`password_hash`:** Passwords will be stored hashed, not in plain text (implementation note).
 - **`cost_price`:** Cost price — added alongside `default_price` (selling price) so net profit margin can be calculated (see item 12).
+- **`sales.payment_method`:** Added to comply with the decision in item 6 ("Payment — Fully Mocked") — holds a value like `cash`/`card`, triggers no real financial transaction. It was missing from the schema table in the first draft; noticed and added during the schema-refinement pass.
 - **`sales` / `sale_items` separation:** A sale's header information (date, branch, employee) exists once per sale; each product line item inside it (product, quantity, amount) is a separate row. The total amount is not stored in a separate field — it is calculated on demand by `SUM`-ing the `sale_items.line_total` fields when needed (consistent with the "Reporting — Live Query" principle in item 5). `sale_items` is the data source for the co-occurrence/Apriori calculation — rows sharing the same `sale_id` form the set of "products purchased together."
+
+### Schema Refinement (Pre-Implementation Decisions)
+
+The abstract schema in item 9 was refined with the following concrete decisions before moving to implementation:
+
+**Primary key type:** All `id` fields are **BIGSERIAL** (auto-incrementing 64-bit integer). Not UUID — readability and join performance were preferred; the predictability of ids is an acceptable risk at this scale.
+
+**Deletion strategy — Soft Delete:** Entity tables that may be referenced by historical data (sales/sale_items/shifts) via FK are never hard-deleted; they are deactivated via an `is_active` field (BOOLEAN, default `true`). Scope: `companies`, `regions`, `branches`, `employees`, `products`. Rationale: e.g. when an employee leaves or a product is removed from the catalog, past sales/shift records must not break. `stock`, `sales`, `sale_items`, `shifts`, `company_features`, `company_branding` are not in scope — these are event records or 1-1 config, not "entities to be deactivated."
+
+**Timestamp fields:** `created_at` on all tables; additionally `updated_at` on tables that can be updated (`companies`, `regions`, `branches`, `employees`, `products`, `stock`, `company_features`, `company_branding`). Immutable event records (`sales`, `sale_items`, `shifts`) do not get `updated_at`.
+
+**Unique constraint / index plan:**
+- `products.sku` → UNIQUE (item 15 — uniqueness for barcode/manual lookup).
+- `employees (company_id, username)` → composite UNIQUE, `username` alone is not unique (item 16 — username unique within a company).
+- `sale_items.sale_id`, `sale_items.product_id` → index (for reporting/co-occurrence JOIN/GROUP BY).
+- `sales (branch_id, sale_date)` → composite index (for date-range + branch-based report queries, item 5).
+- `shifts (employee_id, shift_date)` → composite index.
+- `employees.role` → index (notification targeting, item 14).
+- `stock (product_id, branch_id)` is already a composite PK, no extra index needed.
+
+**Shift scope:** The `shifts` table only holds the **planned** shift schedule (the `start_time`/`end_time` assigned by the Operations Chief). Actual clock-in/clock-out (real attendance tracking) is out of scope — the brief does not require it, and it would be a separate feature.
+
+**Column data types:**
+
+| Category | Fields | Type |
+|---|---|---|
+| Money | `default_price`, `cost_price`, `price_override`, `line_total` | `NUMERIC(10,2)` |
+| Quantity | `quantity`, `low_stock_threshold` | `INTEGER` |
+| Date (day only) | `best_before_date`, `shift_date` | `DATE` |
+| Date+time | `sale_date`, `created_at`, `updated_at` | `TIMESTAMPTZ` (timezone-aware — corrected from plain `TIMESTAMP` during code review, to avoid UTC/local-time ambiguity) |
+| Time | `shifts.start_time`, `shifts.end_time` | `TIME` |
+| Boolean | `is_day_off`, `is_active`, `enabled` | `BOOLEAN` |
+| Short text | `name`, `sku`, `category`, `role`, `username`, `first_name`, `last_name` | `VARCHAR(n)` (n decided during implementation) |
+| Free text | `address`, `logo_url` | `TEXT` |
+| Number | `age` | `SMALLINT` |
+
+**`manager_pin` security:** Same approach as `password_hash` — not stored in plain text, **hashed** instead; the entered PIN is hashed and compared during verification. Since the PIN is short, rate-limiting against brute-force will be considered during implementation.
+
+**Migration/creation order (per FK dependency graph):**
+`companies` → `regions` → `branches` → `employees` → `products` → `stock` → `sales` → `sale_items` → `shifts` → `company_features` → `company_branding`.
 
 ---
 

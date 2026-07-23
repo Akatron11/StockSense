@@ -4,18 +4,27 @@ skinparam classAttributeIconSize 0
 class Company {
   id : PK
   name
+  is_active
+  created_at
+  updated_at
 }
 
 class Region {
   id : PK
   name
   company_id : FK
+  is_active
+  created_at
+  updated_at
 }
 
 class Branch {
   id : PK
   name
   region_id : FK
+  is_active
+  created_at
+  updated_at
 }
 
 class Product {
@@ -26,6 +35,9 @@ class Product {
   default_price
   cost_price
   best_before_date
+  is_active
+  created_at
+  updated_at
 }
 
 class Stock {
@@ -34,6 +46,8 @@ class Stock {
   quantity
   low_stock_threshold
   price_override : nullable
+  created_at
+  updated_at
 }
 
 class Employee {
@@ -49,6 +63,9 @@ class Employee {
   age
   address
   manager_pin : nullable
+  is_active
+  created_at
+  updated_at
 }
 
 class Sale {
@@ -56,6 +73,8 @@ class Sale {
   sale_date
   branch_id : FK
   employee_id : FK
+  payment_method
+  created_at
 }
 
 class SaleItem {
@@ -64,6 +83,7 @@ class SaleItem {
   product_id : FK
   quantity
   line_total
+  created_at
 }
 
 class Shift {
@@ -73,12 +93,15 @@ class Shift {
   start_time
   end_time
   is_day_off
+  created_at
 }
 
 class CompanyFeature {
   company_id : FK
   feature_name
   enabled
+  created_at
+  updated_at
 }
 
 class CompanyBranding {
@@ -86,6 +109,8 @@ class CompanyBranding {
   logo_url
   primary_color
   display_name
+  created_at
+  updated_at
 }
 
 Company "1" -- "*" Region

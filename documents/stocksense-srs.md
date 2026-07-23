@@ -358,7 +358,9 @@ Each FR is the requirement-statement translation of its related UC (no MoSCoW pr
 
 ### Class Diagram
 
-A direct reflection of the database schema in the architecture file (item 9 — base schema, item 10 — multi-tenant tables) — no separate conceptual/domain abstraction was made (`Employee` is a single class, `role` is an attribute; no inheritance is used). Among the `role` values, **Vendor Manager** and **Company IT** now replace the old (single) Admin; since the Vendor Manager is above the tenant level, all three of `branch_id`/`region_id`/`company_id` are null. `CompanyFeature`'s field structure was not defined in item 10 — here it is modeled as one row per feature (`company_id, feature_name, enabled`), so that new features can be added without a schema change.
+A direct reflection of the database schema in the architecture file (item 9 — base schema, item 10 — multi-tenant tables, item 9 "Schema Refinement" — pre-implementation decisions) — no separate conceptual/domain abstraction was made (`Employee` is a single class, `role` is an attribute; no inheritance is used). Among the `role` values, **Vendor Manager** and **Company IT** now replace the old (single) Admin; since the Vendor Manager is above the tenant level, all three of `branch_id`/`region_id`/`company_id` are null. `CompanyFeature`'s field structure was not defined in item 10 — here it is modeled as one row per feature (`company_id, feature_name, enabled`), so that new features can be added without a schema change.
+
+**Reflection of the Schema Refinement decisions:** `id` fields are BIGSERIAL (shown simply as `PK` in the diagram). `is_active` was added to the classes within soft-delete scope (`Company`, `Region`, `Branch`, `Employee`, `Product`). `created_at` was added to all classes; `updated_at` was additionally added to the updatable ones (the five with `is_active`, plus `Stock`, `CompanyFeature`, `CompanyBranding`) — immutable event records (`Sale`, `SaleItem`, `Shift`) only get `created_at`.
 
 ```plantuml
 @startuml StockSense_ClassDiagram
@@ -367,18 +369,27 @@ skinparam classAttributeIconSize 0
 class Company {
   id : PK
   name
+  is_active
+  created_at
+  updated_at
 }
 
 class Region {
   id : PK
   name
   company_id : FK
+  is_active
+  created_at
+  updated_at
 }
 
 class Branch {
   id : PK
   name
   region_id : FK
+  is_active
+  created_at
+  updated_at
 }
 
 class Product {
@@ -389,6 +400,9 @@ class Product {
   default_price
   cost_price
   best_before_date
+  is_active
+  created_at
+  updated_at
 }
 
 class Stock {
@@ -397,6 +411,8 @@ class Stock {
   quantity
   low_stock_threshold
   price_override : nullable
+  created_at
+  updated_at
 }
 
 class Employee {
@@ -412,6 +428,9 @@ class Employee {
   age
   address
   manager_pin : nullable
+  is_active
+  created_at
+  updated_at
 }
 
 class Sale {
@@ -419,6 +438,8 @@ class Sale {
   sale_date
   branch_id : FK
   employee_id : FK
+  payment_method
+  created_at
 }
 
 class SaleItem {
@@ -427,6 +448,7 @@ class SaleItem {
   product_id : FK
   quantity
   line_total
+  created_at
 }
 
 class Shift {
@@ -436,12 +458,15 @@ class Shift {
   start_time
   end_time
   is_day_off
+  created_at
 }
 
 class CompanyFeature {
   company_id : FK
   feature_name
   enabled
+  created_at
+  updated_at
 }
 
 class CompanyBranding {
@@ -449,6 +474,8 @@ class CompanyBranding {
   logo_url
   primary_color
   display_name
+  created_at
+  updated_at
 }
 
 Company "1" -- "*" Region
