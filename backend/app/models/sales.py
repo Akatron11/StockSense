@@ -21,6 +21,7 @@ class Sale(Base, TimestampMixin):
     branch: Mapped["Branch"] = relationship(back_populates="sales")
     employee: Mapped["Employee"] = relationship(back_populates="sales")
     items: Mapped[list["SaleItem"]] = relationship(back_populates="sale")
+    returns: Mapped[list["Return"]] = relationship(back_populates="sale")
 
 
 class SaleItem(Base, TimestampMixin):
@@ -41,4 +42,44 @@ class SaleItem(Base, TimestampMixin):
     line_total: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 
     sale: Mapped["Sale"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship()
+
+
+class Return(Base, TimestampMixin):
+    """Madde 6 (İade/Değişim — Manager PIN Onayı) — ayrı tablo, `sales`'in yeniden kullanımı değil.
+
+    `Sale`'in aksine iki aşamalı bir yaşam döngüsü var (pending → completed, PIN onayıyla).
+    """
+
+    __tablename__ = "returns"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), nullable=False)
+    initiated_by: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", server_default="pending")
+    net_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    completed_by: Mapped[int | None] = mapped_column(ForeignKey("employees.id"), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    sale: Mapped["Sale"] = relationship(back_populates="returns")
+    initiated_by_employee: Mapped["Employee"] = relationship(foreign_keys=[initiated_by])
+    completed_by_employee: Mapped["Employee | None"] = relationship(foreign_keys=[completed_by])
+    items: Mapped[list["ReturnItem"]] = relationship(back_populates="return_")
+
+
+class ReturnItem(Base, TimestampMixin):
+    """Madde 6 — iade kalemi; `direction` alanı iade edilen (`returned`) ile değişimde verilen yeni
+    (`new`) ürünleri aynı tabloda ayırt eder (sale_items ile aynı ayrım mantığı)."""
+
+    __tablename__ = "return_items"
+    __table_args__ = (CheckConstraint("quantity > 0", name="ck_return_items_quantity_positive"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    return_id: Mapped[int] = mapped_column(ForeignKey("returns.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    direction: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    return_: Mapped["Return"] = relationship(back_populates="items")
     product: Mapped["Product"] = relationship()

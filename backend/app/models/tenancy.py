@@ -47,6 +47,7 @@ class Branch(Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin):
     employees: Mapped[List["Employee"]] = relationship(back_populates="branch")
     stock: Mapped[List["Stock"]] = relationship(back_populates="branch")
     sales: Mapped[List["Sale"]] = relationship(back_populates="branch")
+    stock_requests: Mapped[List["StockRequest"]] = relationship(back_populates="branch")
 
 
 class CompanyFeature(Base, TimestampMixin, UpdatedAtMixin):

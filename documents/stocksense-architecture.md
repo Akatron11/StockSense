@@ -107,6 +107,28 @@ Every superior role in the business hierarchy automatically covers the permissio
 - The cashier's session does not change/close at all during this — this is not a role switch (see item 2, "'Switch to Register' — Operations Chief Only") but a one-time approval event.
 - Unlike a physical key, the digital approval **is not limited to one person** — any approver present at the branch at that moment (Stock Manager, Seller Manager, Operations Chief, or their deputies) can approve; the Branch Manager is not in this pool. This automatically solves a real problem in the physical world (work stops if the key-holder is on leave).
 
+**Data model decision (finalized during implementation, 2026-07-24):** The return/exchange flow is modeled as a **separate `returns`/`return_items` table**, rather than reusing the `sales` table. Rationale: consistent with the `sales`/`sale_items` separation principle (item 9 — "different concepts in different tables"); also, `Sale` currently has no `status` field at all (it is an immutable event record considered complete the moment it's created) — adding a return-specific `pending`/`completed` state machine to `sales` would leave those fields empty for every ordinary sale. A separate table also means reporting queries (item 13/14/16, and the co-occurrence/Apriori calculation in item 15) never need to remember to filter out returns — returns simply never appear in those queries in the first place.
+```
+returns:
+  id            BIGSERIAL PK
+  sale_id       FK → sales
+  initiated_by  FK → employees   (Cashier — who started it)
+  status        VARCHAR          ('pending' / 'completed')
+  net_amount    NUMERIC(10,2)
+  completed_by  FK → employees, nullable
+  completed_at  TIMESTAMP, nullable
+  created_at    TIMESTAMP
+
+return_items:
+  id            BIGSERIAL PK
+  return_id     FK → returns
+  product_id    FK → products
+  quantity      INTEGER          (check > 0, consistent with sale_items)
+  unit_price    NUMERIC(10,2)
+  direction     VARCHAR          ('returned' / 'new')
+```
+`branch_id` is not stored separately — consistent with `sale_items` not storing `branch_id` and instead accessing it via `sales`, `returns.sale_id` is used to reach `sales.branch_id`. Not in soft-delete scope (an event record, like `sales`/`sale_items`/`shifts`).
+
 ### Stock Notifications
 - When stock is depleted (drops to 0) AND drops below the configurable threshold, a **notification goes to the Stock Manager** (this is not a fixed rule — see item 14, "Notification Target Principle": the notification goes to the most specific active role that actually holds this authority at that moment).
 - A concurrency-rejection event (when the sale of the cashier who lost the race for the last unit is rejected) is also connected to the same notification channel — the "last unit of this product was sold, stock is 0" signal reaches the relevant role via the same target-determination principle (item 14).
@@ -214,6 +236,22 @@ The abstract schema in item 9 was refined with the following concrete decisions 
 
 **Shift scope:** The `shifts` table only holds the **planned** shift schedule (the `start_time`/`end_time` assigned by the Operations Chief). Actual clock-in/clock-out (real attendance tracking) is out of scope — the brief does not require it, and it would be a separate feature.
 
+**`employees.role` literal values:** The TR-language documents (`TR dosyalar/`) are kept in Turkish for the author's own reference, but the actual system (code, `role` literal values) and the English documents (this one) are entirely in English — so the `role` field is stored as an English string:
+
+| Turkish name (used in the TR documents) | `role` value |
+|---|---|
+| Kasiyer | `cashier` |
+| Şube Müdürü | `branch_manager` |
+| Bölge Müdürü | `region_manager` |
+| Genel Müdür | `general_manager` |
+| Stock Manager | `stock_manager` |
+| Seller Manager | `seller_manager` |
+| Operasyon Şefi | `operations_chief` |
+| Şirket IT | `company_it` |
+| Satıcı Yöneticisi | `vendor_manager` |
+
+(Deputy roles — Deputy Branch Manager, etc. — will be added to this table once finalized.)
+
 **Column data types:**
 
 | Category | Fields | Type |
@@ -248,7 +286,22 @@ By the end of the project, the system will be designed not for a single customer
 
 ## 11. Stock Source — Branch Stock and Central Warehouse (Item 3 Update)
 
-The decision in item 3 that "supply chain is out of scope" still holds in the sense that **physical logistics** (wholesaler relationships, shipping, etc.) remain out of scope. However, the following scenario will be added to the system: a branch either **(a) uses its own stock** or **(b) requests it from the central warehouse**. This is not a full supply chain/logistics management feature — it is only the representation, in the system, of the two possible stock sources. Details (central warehouse data model, transfer flow) will be clarified during implementation.
+The decision in item 3 that "supply chain is out of scope" still holds in the sense that **physical logistics** (wholesaler relationships, shipping, etc.) remain out of scope. However, the following scenario will be added to the system: a branch either **(a) uses its own stock** or **(b) requests it from the central warehouse**. This is not a full supply chain/logistics management feature — it is only the representation, in the system, of the two possible stock sources.
+
+**Data model decision (finalized during implementation, 2026-07-24):**
+- **The central warehouse is not an entity with its own tracked stock level — it is an unlimited/always-available source.** The warehouse's own depletion/logistics is not modeled (that would fall under the real supply-chain management that item 3 explicitly excludes). A requested quantity is always fulfilled.
+- There is no approval/rejection process (unlike the return/exchange PIN approval in item 6) — the moment a request is created, it is considered fulfilled.
+- A new table: **`stock_requests`** — records "which branch requested how much of this product from the central warehouse and when" (for potential future reporting needs; currently no report/KPI uses this data, it exists purely for history/audit purposes):
+  ```
+  id            BIGSERIAL PK
+  product_id    FK → products
+  branch_id     FK → branches
+  quantity      INTEGER
+  requested_by  FK → employees
+  created_at    TIMESTAMP
+  ```
+  Not in soft-delete scope (like other event records — `sales`, `sale_items`, `shifts` — it only has `created_at`).
+- When a request is created, both a row is inserted into `stock_requests` **and** the relevant `stock.quantity` is incremented, **in the same transaction** — atomic.
 
 ## 12. Financial Tracking — Net Profit Margin (Item 9 Schema Update)
 

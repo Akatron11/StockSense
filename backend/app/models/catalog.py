@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, Integer, Numeric, String
+from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin
@@ -35,3 +35,20 @@ class Stock(Base, TimestampMixin, UpdatedAtMixin):
 
     product: Mapped["Product"] = relationship(back_populates="stock")
     branch: Mapped["Branch"] = relationship(back_populates="stock")
+
+
+class StockRequest(Base, TimestampMixin):
+    """Madde 11 (Merkez Depo) — sınırsız kaynak, onay/red süreci yok; audit/geçmiş amaçlı kayıt."""
+
+    __tablename__ = "stock_requests"
+    __table_args__ = (CheckConstraint("quantity > 0", name="ck_stock_requests_quantity_positive"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    requested_by: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+
+    product: Mapped["Product"] = relationship()
+    branch: Mapped["Branch"] = relationship(back_populates="stock_requests")
+    requested_by_employee: Mapped["Employee"] = relationship(foreign_keys=[requested_by])
