@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, Numeric, String
+from sqlalchemy import CheckConstraint, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin
@@ -10,15 +10,18 @@ class Product(Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin):
     """Madde 4 (Ürün Kataloğu ve Fiyatlandırma) — company-level catalog."""
 
     __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("company_id", "sku", name="uq_products_company_sku"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
-    sku: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    sku: Mapped[str] = mapped_column(String(50), nullable=False)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     default_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     cost_price: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     best_before_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+    company: Mapped["Company"] = relationship(back_populates="products")
     stock: Mapped[list["Stock"]] = relationship(back_populates="product")
 
 

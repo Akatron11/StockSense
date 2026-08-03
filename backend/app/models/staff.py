@@ -1,9 +1,38 @@
 from datetime import date, time
 
-from sqlalchemy import Boolean, Date, ForeignKey, Index, SmallInteger, String, Text, Time, UniqueConstraint, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    ForeignKey,
+    Index,
+    SmallInteger,
+    String,
+    Text,
+    Time,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin
+
+# Madde 9 "Şema Detaylandırma" — mevcut karara bağlanmış 10 rol (manager yardımcı rolleri, örn. Seller
+# Manager Yardımcısı, henüz netleşmedi — bkz. TR dosyalar/PROCESS.md). "staff": madde 13 — login'siz
+# personel (manav, kasap, raf düzenleyici vb.); iş unvanları sistem için önemli değil, hepsi tek bir
+# genel role sahip (kullanıcı kararı, 2026-07-31).
+VALID_ROLES = (
+    "cashier",
+    "branch_manager",
+    "region_manager",
+    "general_manager",
+    "stock_manager",
+    "seller_manager",
+    "operations_chief",
+    "company_it",
+    "vendor_manager",
+    "staff",
+)
 
 
 class Employee(Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin):
@@ -21,6 +50,14 @@ class Employee(Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin):
             "username",
             unique=True,
             postgresql_where=text("company_id IS NULL"),
+        ),
+        CheckConstraint(f"role IN {VALID_ROLES}", name="ck_employees_role_valid"),
+        # Madde 10 — Satıcı Yöneticisi tenant-üstüdür (branch/region/company hepsi NULL);
+        # diğer tüm roller bir şirkete bağlı olmak zorundadır (company_id NOT NULL).
+        CheckConstraint(
+            "(role = 'vendor_manager' AND branch_id IS NULL AND region_id IS NULL AND company_id IS NULL) "
+            "OR (role != 'vendor_manager' AND company_id IS NOT NULL)",
+            name="ck_employees_vendor_manager_scope",
         ),
     )
 

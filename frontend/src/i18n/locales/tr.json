@@ -1,0 +1,45 @@
+{
+  "login": {
+    "username": "Kullanıcı adı",
+    "password": "Şifre",
+    "submit": "Giriş yap",
+    "submitting": "Giriş yapılıyor...",
+    "forgotPassword": "Şifrenizi mi unuttunuz? Şirket IT / yöneticinize başvurun.",
+    "errorInvalid": "Kullanıcı adı veya şifre hatalı.",
+    "errorGeneric": "Giriş yapılamadı, lütfen tekrar deneyin."
+  },
+  "chrome": {
+    "brandSlot": "marka alanı (subdomain)",
+    "notifications": "Bildirimler",
+    "notificationsPlaceholder": "Bildirimler henüz bağlanmadı",
+    "system": "Sistem",
+    "language": "Dil / Language",
+    "logout": "Çıkış"
+  },
+  "nav": {
+    "home": "Ana sayfa",
+    "salesReports": "Satış raporları",
+    "profitKpi": "Kâr marjı / KPI",
+    "accountManagement": "Hesap yönetimi",
+    "branchOperations": "Şube operasyonu",
+    "stockList": "Stok listesi",
+    "stockRequest": "Merkez depo talebi",
+    "priceManagement": "Fiyat yönetimi",
+    "layoutSuggestion": "Layout önerisi",
+    "regionDetail": "Bölge detayı",
+    "stock": "Stok",
+    "price": "Fiyat",
+    "layout": "Layout",
+    "branchRegionDetail": "Şube / bölge detayı",
+    "productCatalog": "Ürün kataloğu",
+    "shiftCalendar": "Vardiya takvimi",
+    "staffRecords": "Personel kayıtları",
+    "goToRegister": "Kasaya geç",
+    "accountOverride": "Hesap override",
+    "newTopAccount": "Yeni üst hesap",
+    "customers": "Müşteriler",
+    "day0Setup": "Day-0 kurulum",
+    "featureRoleConfig": "Feature / rol config",
+    "branding": "Branding"
+  }
+}

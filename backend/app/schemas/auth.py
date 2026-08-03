@@ -1,0 +1,17 @@
+from pydantic import BaseModel
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    full_name: str
+    role: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    user: UserOut

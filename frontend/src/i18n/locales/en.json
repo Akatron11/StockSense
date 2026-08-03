@@ -1,0 +1,45 @@
+{
+  "login": {
+    "username": "Username",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in...",
+    "forgotPassword": "Forgot your password? Contact Company IT / your manager.",
+    "errorInvalid": "Invalid username or password.",
+    "errorGeneric": "Could not log in, please try again."
+  },
+  "chrome": {
+    "brandSlot": "brand area (subdomain)",
+    "notifications": "Notifications",
+    "notificationsPlaceholder": "Notifications not wired up yet",
+    "system": "System",
+    "language": "Dil / Language",
+    "logout": "Log out"
+  },
+  "nav": {
+    "home": "Home",
+    "salesReports": "Sales reports",
+    "profitKpi": "Profit margin / KPI",
+    "accountManagement": "Account management",
+    "branchOperations": "Branch operations",
+    "stockList": "Stock list",
+    "stockRequest": "Central warehouse request",
+    "priceManagement": "Price management",
+    "layoutSuggestion": "Layout suggestion",
+    "regionDetail": "Region detail",
+    "stock": "Stock",
+    "price": "Price",
+    "layout": "Layout",
+    "branchRegionDetail": "Branch / region detail",
+    "productCatalog": "Product catalog",
+    "shiftCalendar": "Shift calendar",
+    "staffRecords": "Staff records",
+    "goToRegister": "Go to register",
+    "accountOverride": "Account override",
+    "newTopAccount": "New top-level account",
+    "customers": "Customers",
+    "day0Setup": "Day-0 setup",
+    "featureRoleConfig": "Feature / role config",
+    "branding": "Branding"
+  }
+}

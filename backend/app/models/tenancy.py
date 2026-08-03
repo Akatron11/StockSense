@@ -13,9 +13,11 @@ class Company(Base, SoftDeleteMixin, TimestampMixin, UpdatedAtMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
+    subdomain: Mapped[str] = mapped_column(String(63), nullable=False, unique=True)
 
     regions: Mapped[List["Region"]] = relationship(back_populates="company")
     employees: Mapped[List["Employee"]] = relationship(back_populates="company")
+    products: Mapped[List["Product"]] = relationship(back_populates="company")
     features: Mapped[List["CompanyFeature"]] = relationship(back_populates="company")
     branding: Mapped["CompanyBranding"] = relationship(back_populates="company", uselist=False)
 
