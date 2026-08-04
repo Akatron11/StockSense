@@ -1,4 +1,4 @@
-/* prototype/kasiyer-pos.html'e özgü stiller — .panel/.pad/.btn/.field/.overlay/.modal/.avatar/.usermenu*/.um-*
+/* prototype/kasiyer-pos.html'e özgü stiller — .panel/.pad/.btn/.field/.overlay/.modal/.avatar/.usermenu/.um-*
    zaten app.css'ten (paylaşılan wireframe stilleri) geliyor, burada sadece POS'a has olanlar var. */
 .posbar { height: 54px; border-bottom: 1px solid var(--line); background: var(--panel);
   display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
