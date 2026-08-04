@@ -5,6 +5,8 @@ import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { navForRole } from "./navConfig";
 import { Avatar } from "./Avatar";
+import { getLoginBranding } from "../api/auth";
+import { applyBrandColor } from "../theme/brandColor";
 
 interface AppShellProps {
   pageTitle: string;
@@ -23,6 +25,14 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Şirketin ana rengi — /api/auth/branding host header'dan (subdomain) çözer, auth gerektirmez,
+    // login öncesiyle aynı endpoint. admin subdomain'de primary_color null döner, tema değişmez.
+    getLoginBranding()
+      .then((b) => applyBrandColor(b.primary_color))
+      .catch(() => applyBrandColor(null));
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

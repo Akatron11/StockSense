@@ -30,7 +30,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
         font-size:14px;color:var(--ink);cursor:default;}
 .nav-link{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;width:100%;}
 .nav li .ic{width:16px;height:16px;border:1px solid var(--line);border-radius:3px;flex:none;}
-.nav li.active{background:#e4e4e4;border:1px solid var(--line);}
+.nav li.active{background:#e4e4e4;border:1px solid var(--line);
+  border-left:3px solid var(--brand-primary, var(--line));color:var(--brand-primary, var(--ink));}
 .nav .go{margin-top:6px;border:1px dashed var(--line);justify-content:center;}
 .nav-group{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;
       padding:16px 10px 6px;margin-top:8px;border-top:1px solid var(--line);}
@@ -129,7 +130,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 /* butonlar */
 .btn{border:1px solid var(--line);border-radius:var(--radius);background:#ececec;
       font-size:14px;color:var(--ink);height:40px;padding:0 16px;cursor:pointer;}
-.btn.primary{background:#d9d9d9;}
+.btn.primary{background:var(--brand-primary, #d9d9d9);color:var(--brand-primary-fg, var(--ink));
+  border-color:var(--brand-primary, var(--line));}
 .btn.ghost{background:transparent;}
 .btn.sm{height:34px;font-size:13px;padding:0 12px;}
 .btn.block{width:100%;}

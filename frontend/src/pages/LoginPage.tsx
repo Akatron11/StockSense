@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { login, getLoginBranding } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { applyBrandColor } from "../theme/brandColor";
 import type { BrandingOut } from "../types/company";
 import "../styles/login.css";
 
@@ -21,7 +22,10 @@ export function LoginPage() {
 
   useEffect(() => {
     getLoginBranding()
-      .then(setBranding)
+      .then((b) => {
+        setBranding(b);
+        applyBrandColor(b.primary_color);
+      })
       .catch(() => setBranding(null));
   }, []);
 
@@ -98,12 +102,7 @@ export function LoginPage() {
 
           {error && <div className="login-error">{error}</div>}
 
-          <button
-            className="login-btn"
-            type="submit"
-            disabled={isSubmitting}
-            style={branding?.primary_color ? { borderColor: branding.primary_color } : undefined}
-          >
+          <button className="login-btn" type="submit" disabled={isSubmitting}>
             {isSubmitting ? t("login.submitting") : t("login.submit")}
           </button>
 
