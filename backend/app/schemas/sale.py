@@ -27,3 +27,27 @@ class SaleOut(BaseModel):
     payment_method: str
     status: str
     created_at: datetime
+
+
+class SaleListItem(BaseModel):
+    id: int
+    sale_date: datetime
+    total: float
+    payment_method: str
+
+
+class SaleDetailItem(BaseModel):
+    product_id: int
+    product_name: str
+    quantity: int
+    unit_price: float
+    returnable_quantity: int
+
+
+class SaleDetail(BaseModel):
+    id: int
+    sale_date: datetime
+    branch_id: int
+    total: float
+    payment_method: str
+    items: list[SaleDetailItem]

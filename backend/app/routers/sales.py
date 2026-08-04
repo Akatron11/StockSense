@@ -1,16 +1,78 @@
+from collections import defaultdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, update
+from sqlalchemy import desc, select, update
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims, require_role
-from ..models import Product, Sale, SaleItem, Stock
-from ..schemas.sale import SaleCreate, SaleItemOut, SaleOut
+from ..models import Product, Return, ReturnItem, Sale, SaleItem, Stock
+from ..schemas.sale import SaleCreate, SaleDetail, SaleDetailItem, SaleItemOut, SaleListItem, SaleOut
 
 router = APIRouter(prefix="/api/sales", tags=["sales"])
+
+RECENT_SALES_LIMIT = 20
+
+
+@router.get("", response_model=list[SaleListItem])
+def list_sales(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
+    """İade/değişim başlatırken kasiyerin satış no aramadan seçebileceği son satışlar listesi."""
+    require_role(claims, "cashier", "operations_chief")
+    rows = db.scalars(
+        select(Sale)
+        .where(Sale.branch_id == claims["branch_id"])
+        .order_by(desc(Sale.sale_date))
+        .limit(RECENT_SALES_LIMIT)
+    ).all()
+    return [
+        SaleListItem(
+            id=sale.id,
+            sale_date=sale.sale_date,
+            total=round(sum(float(item.line_total) for item in sale.items), 2),
+            payment_method=sale.payment_method,
+        )
+        for sale in rows
+    ]
+
+
+@router.get("/{sale_id}", response_model=SaleDetail)
+def get_sale(sale_id: int, claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
+    """İade formunu otomatik doldurmak için satış kalemleri + hâlâ iade edilebilir miktar."""
+    require_role(claims, "cashier", "operations_chief")
+    sale = db.get(Sale, sale_id)
+    if sale is None or sale.branch_id != claims["branch_id"]:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    already_returned: dict[int, int] = defaultdict(int)
+    completed_return_items = db.scalars(
+        select(ReturnItem)
+        .join(Return, Return.id == ReturnItem.return_id)
+        .where(Return.sale_id == sale_id, Return.status == "completed", ReturnItem.direction == "returned")
+    )
+    for ri in completed_return_items:
+        already_returned[ri.product_id] += ri.quantity
+
+    sale_items = db.scalars(select(SaleItem).where(SaleItem.sale_id == sale_id)).all()
+    items = [
+        SaleDetailItem(
+            product_id=si.product_id,
+            product_name=si.product.name,
+            quantity=si.quantity,
+            unit_price=round(float(si.line_total) / si.quantity, 2),
+            returnable_quantity=si.quantity - already_returned[si.product_id],
+        )
+        for si in sale_items
+    ]
+    return SaleDetail(
+        id=sale.id,
+        sale_date=sale.sale_date,
+        branch_id=sale.branch_id,
+        total=round(sum(float(si.line_total) for si in sale_items), 2),
+        payment_method=sale.payment_method,
+        items=items,
+    )
 
 
 @router.post("", response_model=SaleOut, status_code=201)

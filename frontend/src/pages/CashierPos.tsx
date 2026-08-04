@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { listProducts, searchProducts } from "../api/products";
-import { createSale } from "../api/sales";
+import { createSale, getSale, listRecentSales } from "../api/sales";
 import { initiateReturn, completeReturn } from "../api/returns";
 import { ApiError } from "../api/client";
 import type { ProductRead } from "../types/product";
+import type { SaleDetail, SaleListItem } from "../types/sale";
 import "../styles/pos.css";
 
 interface CartLine {
@@ -14,9 +15,9 @@ interface CartLine {
   quantity: number;
 }
 
-interface ReturnItemDraft {
-  productId: string;
-  quantity: string;
+function formatSaleDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 // prototype/kasiyer-pos.html'in React karşılığı — kasıtlı olarak AppShell/sidebar kullanmıyor (tam ekran POS).
@@ -40,8 +41,11 @@ export function CashierPos() {
   const [lastSaleTotal, setLastSaleTotal] = useState<number | null>(null);
 
   const [returnModalOpen, setReturnModalOpen] = useState(false);
-  const [returnSaleId, setReturnSaleId] = useState("");
-  const [returnItems, setReturnItems] = useState<ReturnItemDraft[]>([{ productId: "", quantity: "1" }]);
+  const [recentSales, setRecentSales] = useState<SaleListItem[]>([]);
+  const [saleListError, setSaleListError] = useState<string | null>(null);
+  const [selectedSale, setSelectedSale] = useState<SaleDetail | null>(null);
+  const [saleDetailError, setSaleDetailError] = useState<string | null>(null);
+  const [returnQuantities, setReturnQuantities] = useState<Record<number, number>>({});
   const [returnError, setReturnError] = useState<string | null>(null);
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [pendingReturnId, setPendingReturnId] = useState<number | null>(null);
@@ -57,6 +61,14 @@ export function CashierPos() {
       .then(setCatalog)
       .catch(() => setCatalogError("Ürün listesi yüklenemedi."));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !returnModalOpen) return;
+    setSaleListError(null);
+    listRecentSales(token)
+      .then(setRecentSales)
+      .catch(() => setSaleListError("Satış listesi yüklenemedi."));
+  }, [token, returnModalOpen]);
 
   if (!token) return null;
 
@@ -123,26 +135,59 @@ export function CashierPos() {
     }
   }
 
+  function resetReturnState() {
+    setSelectedSale(null);
+    setReturnQuantities({});
+    setReturnError(null);
+    setSaleDetailError(null);
+  }
+
+  async function handleSelectSale(saleId: number) {
+    setSaleDetailError(null);
+    try {
+      const detail = await getSale(token as string, saleId);
+      setSelectedSale(detail);
+      const initial: Record<number, number> = {};
+      for (const item of detail.items) {
+        if (item.returnable_quantity > 0) initial[item.product_id] = item.returnable_quantity;
+      }
+      setReturnQuantities(initial);
+    } catch {
+      setSaleDetailError("Satış detayı yüklenemedi.");
+    }
+  }
+
+  function setReturnQuantity(productId: number, quantity: number, max: number) {
+    setReturnQuantities((prev) => {
+      if (quantity < 1) {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      }
+      return { ...prev, [productId]: Math.min(quantity, max) };
+    });
+  }
+
   async function handleInitiateReturn(e: FormEvent) {
     e.preventDefault();
     setReturnError(null);
-    const saleId = Number(returnSaleId);
-    if (!saleId) {
-      setReturnError("Geçerli bir satış no girin.");
+    if (!selectedSale) {
+      setReturnError("Önce bir satış seçin.");
       return;
     }
-    const items = returnItems
-      .filter((i) => i.productId && Number(i.quantity) > 0)
-      .map((i) => ({ product_id: Number(i.productId), quantity: Number(i.quantity) }));
+    const items = Object.entries(returnQuantities)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([productId, quantity]) => ({ product_id: Number(productId), quantity }));
     if (items.length === 0) {
-      setReturnError("En az bir ürün girin.");
+      setReturnError("En az bir ürün seçin.");
       return;
     }
     setReturnSubmitting(true);
     try {
-      const ret = await initiateReturn(token as string, saleId, items);
+      const ret = await initiateReturn(token as string, selectedSale.id, items);
       setPendingReturnId(ret.id);
       setReturnModalOpen(false);
+      resetReturnState();
       setPinModalOpen(true);
     } catch (err) {
       setReturnError(err instanceof ApiError ? `İade başlatılamadı (${err.status}).` : "İade başlatılamadı.");
@@ -161,8 +206,6 @@ export function CashierPos() {
       setPinModalOpen(false);
       setReturnPin("");
       setPendingReturnId(null);
-      setReturnSaleId("");
-      setReturnItems([{ productId: "", quantity: "1" }]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setPinError("PIN hatalı.");
@@ -360,63 +403,104 @@ export function CashierPos() {
           <form onSubmit={handleInitiateReturn}>
             <div className="modal-head">İade / Değişim</div>
             <div className="modal-body">
-              <div className="field">
-                <label>İşlem (satış) no</label>
-                <input
-                  className="input"
-                  value={returnSaleId}
-                  onChange={(e) => setReturnSaleId(e.target.value)}
-                  placeholder="Satış ID"
-                />
-              </div>
-              <div>
-                <div className="field">
-                  <label>İade edilecek ürünler (ürün ID / adet)</label>
+              {!selectedSale && (
+                <div>
+                  <div className="field">
+                    <label>Son satışlar — iade edilecek satışı seçin</label>
+                  </div>
+                  {saleListError && <div className="pos-error">{saleListError}</div>}
+                  {recentSales.length === 0 && !saleListError && (
+                    <div className="muted-small">Şubede henüz satış yok.</div>
+                  )}
+                  <div className="mini-list">
+                    {recentSales.map((sale) => (
+                      <div
+                        className="mrow um-row-clickable"
+                        key={sale.id}
+                        onClick={() => handleSelectSale(sale.id)}
+                      >
+                        <span>
+                          #{sale.id} — {formatSaleDate(sale.sale_date)}
+                        </span>
+                        <span className="muted-small">
+                          {sale.total.toFixed(2)} · {sale.payment_method === "cash" ? "Nakit" : "Kart"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {saleDetailError && <div className="pos-error">{saleDetailError}</div>}
                 </div>
-                <div className="mini-list">
-                  {returnItems.map((item, idx) => (
-                    <div className="mrow" key={idx}>
-                      <input
-                        placeholder="Ürün ID"
-                        value={item.productId}
-                        onChange={(e) => {
-                          const next = [...returnItems];
-                          next[idx] = { ...next[idx], productId: e.target.value };
-                          setReturnItems(next);
-                        }}
-                      />
-                      <input
-                        className="qty-input"
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const next = [...returnItems];
-                          next[idx] = { ...next[idx], quantity: e.target.value };
-                          setReturnItems(next);
-                        }}
-                      />
-                    </div>
-                  ))}
+              )}
+
+              {selectedSale && (
+                <div>
+                  <div className="field">
+                    <label>
+                      Satış #{selectedSale.id} — {formatSaleDate(selectedSale.sale_date)}
+                    </label>
+                  </div>
+                  <div className="mini-list">
+                    {selectedSale.items.map((item) => {
+                      const checked = item.product_id in returnQuantities;
+                      return (
+                        <div className="mrow" key={item.product_id}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, opacity: item.returnable_quantity === 0 ? 0.5 : 1 }}>
+                            <input
+                              type="checkbox"
+                              disabled={item.returnable_quantity === 0}
+                              checked={checked}
+                              onChange={(e) =>
+                                setReturnQuantity(
+                                  item.product_id,
+                                  e.target.checked ? item.returnable_quantity : 0,
+                                  item.returnable_quantity,
+                                )
+                              }
+                            />
+                            {item.product_name}
+                            {item.returnable_quantity === 0 && (
+                              <span className="muted-small">(iade edildi)</span>
+                            )}
+                          </label>
+                          {checked && (
+                            <input
+                              className="qty-input"
+                              type="number"
+                              min={1}
+                              max={item.returnable_quantity}
+                              value={returnQuantities[item.product_id]}
+                              onChange={(e) =>
+                                setReturnQuantity(item.product_id, Number(e.target.value), item.returnable_quantity)
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button type="button" className="btn ghost sm" onClick={resetReturnState}>
+                    ← Farklı satış seç
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  onClick={() => setReturnItems([...returnItems, { productId: "", quantity: "1" }])}
-                >
-                  + Ürün ekle
-                </button>
-              </div>
+              )}
+
               <div className="hintbox">
                 Tamamlamak için yetkili onayı (PIN) gerekir — iade, onay anında kesinleşir.
               </div>
               {returnError && <div className="pos-error">{returnError}</div>}
             </div>
             <div className="modal-foot">
-              <button type="button" className="btn ghost" onClick={() => setReturnModalOpen(false)}>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => {
+                  setReturnModalOpen(false);
+                  resetReturnState();
+                }}
+              >
                 Vazgeç
               </button>
-              <button type="submit" className="btn primary" disabled={returnSubmitting}>
+              <button type="submit" className="btn primary" disabled={returnSubmitting || !selectedSale}>
                 {returnSubmitting ? "Gönderiliyor..." : "Tamamla"}
               </button>
             </div>

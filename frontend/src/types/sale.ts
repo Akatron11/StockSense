@@ -19,3 +19,27 @@ export interface SaleOut {
   status: string;
   created_at: string;
 }
+
+export interface SaleListItem {
+  id: number;
+  sale_date: string;
+  total: number;
+  payment_method: string;
+}
+
+export interface SaleDetailItem {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  returnable_quantity: number;
+}
+
+export interface SaleDetail {
+  id: number;
+  sale_date: string;
+  branch_id: number;
+  total: number;
+  payment_method: string;
+  items: SaleDetailItem[];
+}
