@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
-import { searchProducts } from "../api/products";
+import { listProducts, searchProducts } from "../api/products";
 import { createSale } from "../api/sales";
 import { initiateReturn, completeReturn } from "../api/returns";
 import { ApiError } from "../api/client";
@@ -30,6 +30,9 @@ export function CashierPos() {
   const [lastScanned, setLastScanned] = useState<ProductRead | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
 
+  const [catalog, setCatalog] = useState<ProductRead[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [saleSubmitting, setSaleSubmitting] = useState(false);
@@ -48,9 +51,27 @@ export function CashierPos() {
   const [pinSubmitting, setPinSubmitting] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!token) return;
+    listProducts(token)
+      .then(setCatalog)
+      .catch(() => setCatalogError("Ürün listesi yüklenemedi."));
+  }, [token]);
+
   if (!token) return null;
 
   const subtotal = cart.reduce((sum, line) => sum + line.product.default_price * line.quantity, 0);
+
+  function addToCart(product: ProductRead) {
+    setLastScanned(product);
+    setCart((prev) => {
+      const existing = prev.find((l) => l.product.id === product.id);
+      if (existing) {
+        return prev.map((l) => (l.product.id === product.id ? { ...l, quantity: l.quantity + 1 } : l));
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  }
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
@@ -62,15 +83,7 @@ export function CashierPos() {
         setScanError("Ürün bulunamadı.");
         return;
       }
-      const found = results[0];
-      setLastScanned(found);
-      setCart((prev) => {
-        const existing = prev.find((l) => l.product.id === found.id);
-        if (existing) {
-          return prev.map((l) => (l.product.id === found.id ? { ...l, quantity: l.quantity + 1 } : l));
-        }
-        return [...prev, { product: found, quantity: 1 }];
-      });
+      addToCart(results[0]);
       setScanQuery("");
     } catch {
       setScanError("Arama sırasında hata oluştu.");
@@ -215,6 +228,19 @@ export function CashierPos() {
             </button>
           </form>
           {scanError && <div className="pos-error">{scanError}</div>}
+          {catalogError && <div className="pos-error">{catalogError}</div>}
+
+          {catalog.length > 0 && (
+            <div className="product-list">
+              {catalog.map((product) => (
+                <div className="product-row" key={product.id} onClick={() => addToCart(product)}>
+                  <span>{product.name}</span>
+                  <span className="muted-small">{product.sku}</span>
+                  <span>{product.default_price.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {lastScanned && (
             <div className="scanned">
