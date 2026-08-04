@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { navForRole } from "./navConfig";
+import { Avatar } from "./Avatar";
 
 interface AppShellProps {
   pageTitle: string;
@@ -74,7 +75,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
 
         <div className="rail-spacer" />
         <div className="rail-user">
-          <div className="avatar" />
+          <Avatar name={user?.full_name} />
           <div className="who">
             <span>{user?.full_name}</span>
             <span className="muted-small">{roleText}</span>
@@ -102,7 +103,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
             </div>
 
             <div className={`usermenu${userMenuOpen ? " open" : ""}`} ref={userMenuRef}>
-              <div className="avatar" onClick={() => setUserMenuOpen((v) => !v)} />
+              <Avatar name={user?.full_name} onClick={() => setUserMenuOpen((v) => !v)} />
               <div className="usermenu-pop">
                 <div className="um-head">
                   <span>{user?.full_name}</span>

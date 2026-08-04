@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
+import { Avatar } from "../components/Avatar";
 import { listProducts, searchProducts } from "../api/products";
 import { createSale, getSale, listRecentSales } from "../api/sales";
 import { initiateReturn, completeReturn } from "../api/returns";
@@ -227,7 +228,7 @@ export function CashierPos() {
           <span className="pos-role">{roleText} · POS</span>
         </div>
         <div className={`usermenu${userMenuOpen ? " open" : ""}`}>
-          <div className="avatar" onClick={() => setUserMenuOpen((v) => !v)} />
+          <Avatar name={user?.full_name} onClick={() => setUserMenuOpen((v) => !v)} />
           <div className="usermenu-pop">
             <div className="um-head">
               <span>{user?.full_name}</span>
