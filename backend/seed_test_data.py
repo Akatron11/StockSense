@@ -10,6 +10,8 @@ from app.database import SessionLocal
 from app.models import (
     Branch,
     Company,
+    CompanyBranding,
+    CompanyFeature,
     Employee,
     Product,
     Region,
@@ -52,6 +54,8 @@ def main() -> None:
                 Branch.region_id.in_(db.query(Region.id).filter(Region.company_id == existing.id))
             ).delete(synchronize_session=False)
             db.query(Region).filter(Region.company_id == existing.id).delete()
+            db.query(CompanyFeature).filter(CompanyFeature.company_id == existing.id).delete()
+            db.query(CompanyBranding).filter(CompanyBranding.company_id == existing.id).delete()
             db.delete(existing)
             db.commit()
 
