@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { getBranding, getFeatures, listCompanies, updateBranding, updateFeature } from "../api/companies";
@@ -11,6 +11,17 @@ const FEATURE_LABELS: Record<string, string> = {
   merkez_depo_senaryosu: "Merkez depo senaryosu",
   kpi_modulu: "KPI modülü",
 };
+
+const MAX_LOGO_FILE_BYTES = 290_000; // backend'deki ~300KB base64 sınırıyla eşleşen ham dosya sınırı
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 // prototype/satici-yonetici-panel.html'in React karşılığı — sadece "Müşteriler" listesi + "Yönet"
 // modalı (UC-22 feature flag'leri + UC-23 branding). Day-0 kurulum (UC-17) ve "rol" konfigürasyonu
@@ -30,6 +41,7 @@ export function VendorCustomersPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   async function load() {
     if (!token) return;
@@ -85,6 +97,27 @@ export function VendorCustomersPage() {
       setSaveError(err instanceof ApiError ? `Kaydedilemedi (${err.status}).` : "Kaydedilemedi.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleLogoFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !branding) return;
+    setLogoError(null);
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Sadece görsel dosyaları kabul edilir.");
+      return;
+    }
+    if (file.size > MAX_LOGO_FILE_BYTES) {
+      setLogoError("Dosya çok büyük (maks. ~280KB).");
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setBranding({ ...branding, logo_url: dataUrl });
+    } catch {
+      setLogoError("Dosya okunamadı.");
     }
   }
 
@@ -177,12 +210,27 @@ export function VendorCustomersPage() {
 
                 <div className="form-grid">
                   <div className="field">
-                    <label>Logo URL</label>
-                    <input
-                      className="input"
-                      value={branding?.logo_url ?? ""}
-                      onChange={(e) => branding && setBranding({ ...branding, logo_url: e.target.value })}
-                    />
+                    <label>Logo</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {branding?.logo_url && (
+                        <img
+                          src={branding.logo_url}
+                          alt="Logo önizleme"
+                          style={{ width: 44, height: 44, objectFit: "contain", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}
+                        />
+                      )}
+                      <input type="file" accept="image/*" onChange={handleLogoFile} style={{ fontSize: 12 }} />
+                      {branding?.logo_url && (
+                        <button
+                          type="button"
+                          className="btn ghost sm"
+                          onClick={() => branding && setBranding({ ...branding, logo_url: null })}
+                        >
+                          Kaldır
+                        </button>
+                      )}
+                    </div>
+                    {logoError && <div className="error-text">{logoError}</div>}
                   </div>
                   <div className="field">
                     <label>Ana renk</label>
