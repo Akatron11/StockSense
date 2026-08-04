@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -19,7 +19,7 @@ def list_products(claims: dict = Depends(get_current_claims), db: Session = Depe
 
 @router.get("/search", response_model=list[ProductRead])
 def search_products(q: str, claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
-    """UC-01 — barkod/SKU tam eşleşme, yoksa isimde kısmi eşleşme. Çıktı her zaman array."""
+    """UC-01 — SKU tam eşleşme, yoksa SKU'da veya isimde kısmi eşleşme. Çıktı her zaman array."""
     exact_match = db.scalar(
         select(Product).where(
             Product.company_id == claims["company_id"], Product.sku == q, Product.is_active.is_(True)
@@ -32,7 +32,7 @@ def search_products(q: str, claims: dict = Depends(get_current_claims), db: Sess
         select(Product).where(
             Product.company_id == claims["company_id"],
             Product.is_active.is_(True),
-            Product.name.ilike(f"%{q}%"),
+            or_(Product.name.ilike(f"%{q}%"), Product.sku.ilike(f"%{q}%")),
         )
     ).all()
 
