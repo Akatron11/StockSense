@@ -72,7 +72,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   return (
     <div className="app">
       <aside className="rail">
-        <div className="logo">
+        <div className={`logo${logoUrl ? " has-image" : ""}`}>
           {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-img" /> : "LOGO"}
         </div>
         <div className="rail-role">{roleText}</div>

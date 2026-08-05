@@ -242,7 +242,7 @@ export function CashierPos() {
     <div>
       <header className="posbar">
         <div className="posbar-left">
-          <span className="logo-sm">
+          <span className={`logo-sm${logoUrl ? " has-image" : ""}`}>
             {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-sm-img" /> : "LOGO"}
           </span>
           <span className="pos-role">{roleText} · POS</span>

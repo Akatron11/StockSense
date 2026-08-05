@@ -3,9 +3,10 @@
 .posbar { height: 54px; border-bottom: 1px solid var(--line); background: var(--panel);
   display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
 .posbar-left { display: flex; align-items: center; gap: 14px; }
-.logo-sm { border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted);
-  font-size: 11px; letter-spacing: .12em; padding: 7px 12px; display: inline-flex; align-items: center; }
-.logo-sm-img { height: 24px; max-width: 88px; object-fit: contain; }
+.logo-sm { display: inline-flex; align-items: center; }
+.logo-sm:not(.has-image) { border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted);
+  font-size: 11px; letter-spacing: .12em; padding: 7px 12px; }
+.logo-sm-img { max-height: 36px; width: auto; object-fit: contain; }
 .pos-role { font-size: 13px; color: var(--muted); }
 
 .pos { display: grid; grid-template-columns: 1fr 320px; gap: 16px; padding: 18px; align-items: start; }

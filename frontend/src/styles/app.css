@@ -21,10 +21,10 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .app{display:flex;min-height:100vh;}
 .rail{width:230px;background:var(--rail);border-right:1px solid var(--line);
       display:flex;flex-direction:column;padding:14px 12px;}
-.logo{height:40px;border:1px dashed var(--line);border-radius:var(--radius);
-      display:flex;align-items:center;justify-content:center;color:var(--muted);
-      font-size:12px;letter-spacing:.12em;margin-bottom:6px;overflow:hidden;}
-.logo-img{width:100%;height:100%;object-fit:contain;}
+.logo{display:flex;align-items:center;margin-bottom:6px;min-height:40px;}
+.logo:not(.has-image){height:40px;border:1px dashed var(--line);border-radius:var(--radius);
+      justify-content:center;color:var(--muted);font-size:12px;letter-spacing:.12em;}
+.logo-img{max-width:100%;max-height:56px;width:auto;height:auto;object-fit:contain;}
 .rail-role{font-size:11px;color:var(--muted);padding:8px 6px 12px;letter-spacing:.04em;}
 .nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
 .nav li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);
