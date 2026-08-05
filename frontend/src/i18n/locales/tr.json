@@ -6,7 +6,9 @@
     "submitting": "Giriş yapılıyor...",
     "forgotPassword": "Şifrenizi mi unuttunuz? Şirket IT / yöneticinize başvurun.",
     "errorInvalid": "Kullanıcı adı veya şifre hatalı.",
-    "errorGeneric": "Giriş yapılamadı, lütfen tekrar deneyin."
+    "errorGeneric": "Giriş yapılamadı, lütfen tekrar deneyin.",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle"
   },
   "chrome": {
     "notifications": "Bildirimler",

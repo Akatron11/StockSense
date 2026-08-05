@@ -18,8 +18,14 @@
 
 .login-field { display: flex; flex-direction: column; gap: 7px; }
 .login-field label { font-size: 13px; color: var(--ink); }
-.login-input { height: 40px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+.login-input { height: 40px; width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
   padding: 0 10px; font-size: 14px; font-family: inherit; }
+
+.login-input-wrap { position: relative; }
+.login-input-wrap .login-input { padding-right: 38px; }
+.login-input-toggle { position: absolute; top: 0; right: 0; width: 40px; height: 40px; border: none;
+  background: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.login-input-toggle:hover { color: var(--ink); }
 
 .login-btn { height: 42px; border: 1px solid var(--brand-primary, var(--line)); border-radius: var(--radius);
   background: var(--brand-primary, #ececec); color: var(--brand-primary-fg, var(--ink));
