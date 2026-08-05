@@ -6,8 +6,8 @@ import en from "./locales/en.json";
 const LANG_STORAGE_KEY = "stocksense_lang";
 
 // Madde 17 (Lokalizasyon) — dil Login ekranında seçilir, kullanıcı menüsünden değiştirilebilir,
-// localStorage'da kalıcı. Sadece "chrome" (nav/topbar/login) çevrildi (kullanıcı kararı, 2026-08-03) —
-// sayfa içerikleri (dashboard/form metinleri) bu turun kapsamı dışı, ayrıca ele alınacak.
+// localStorage'da kalıcı. Tüm sayfa içerikleri (dashboard/form metinleri, rol etiketleri dahil)
+// 2026-08-05 itibarıyla çevrildi (hoca geri bildirimi, PROCESS.md).
 i18n.use(initReactI18next).init({
   resources: {
     tr: { translation: tr },
