@@ -47,7 +47,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const roleText = user ? roleLabel(user.role) : "";
+  const roleText = user ? roleLabel(t, user.role) : "";
   const navGroups = user ? navForRole(user.role) : [];
 
   return (

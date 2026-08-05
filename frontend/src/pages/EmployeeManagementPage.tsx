@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { AppShell } from "../components/AppShell";
@@ -55,6 +56,7 @@ function emptyForm(defaultRole: string): FormState {
 // 2026-08-03). region_manager'da hedef şube, general_manager'da hedef bölge seçici eklendi
 // (bunun için yeni GET /api/branches ve GET /api/regions endpoint'leri açıldı).
 export function EmployeeManagementPage() {
+  const { t } = useTranslation();
   const { token, user } = useAuth();
   const creatorRole = user?.role ?? "";
   const targetRoles = CREATABLE_ROLES[creatorRole] ?? [];
@@ -86,7 +88,7 @@ export function EmployeeManagementPage() {
       setBranches(branchList);
       setRegions(regionList);
     } catch {
-      setLoadError("Hesap listesi alınamadı.");
+      setLoadError(t("employees.loadError"));
     } finally {
       setLoading(false);
     }
@@ -160,9 +162,9 @@ export function EmployeeManagementPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? `Kaydedilemedi (${err.status}).`);
+        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
       } else {
-        setSaveError("Kaydedilemedi.");
+        setSaveError(t("common.saveFailed"));
       }
     } finally {
       setSaving(false);
@@ -173,53 +175,56 @@ export function EmployeeManagementPage() {
   const canPickPin = !editing && PIN_APPROVER_ROLES.includes(form.role);
   const canEditPin = editing !== null && PIN_APPROVER_ROLES.includes(editing.role);
 
+  const creatorLabel = roleLabel(t, creatorRole);
+  const targetLabels = targetRoles.map((r) => roleLabel(t, r)).join(" / ");
+
   return (
-    <AppShell pageTitle="Hesap yönetimi">
+    <AppShell pageTitle={t("nav.accountManagement")}>
       <div className="scope">
-        Üst seviye, bir alt seviyeyi oluşturur ({roleLabel(creatorRole)} → {targetRoles.map(roleLabel).join(" / ")})
+        {t("employees.scopeDesc", { creator: creatorLabel, targets: targetLabels })}
       </div>
       <div className="panel">
         <div className="panel-head">
-          Hesaplar
+          {t("employees.title")}
           <span className="filters">
             <input
               className="input"
               style={{ height: 34 }}
-              placeholder="Ara: ad / kullanıcı adı"
+              placeholder={t("employees.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <button className="btn sm primary" onClick={openCreate} disabled={targetRoles.length === 0}>
-              Yeni hesap
+              {t("employees.newAccount")}
             </button>
           </span>
         </div>
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
           {loading ? (
-            <div className="muted-small">Yükleniyor...</div>
+            <div className="muted-small">{t("common.loading")}</div>
           ) : (
             <>
               <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr .8fr .8fr" }}>
-                <span>Ad</span>
-                <span>Rol</span>
-                <span>Kullanıcı adı</span>
-                <span>Durum</span>
+                <span>{t("employees.colName")}</span>
+                <span>{t("employees.colRole")}</span>
+                <span>{t("employees.colUsername")}</span>
+                <span>{t("employees.colStatus")}</span>
                 <span />
               </div>
               {filtered.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
-                  Kayıt yok.
+                  {t("common.noRecords")}
                 </div>
               )}
               {filtered.map((employee) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr .8fr .8fr" }} key={employee.id}>
                   <span>{employee.first_name} {employee.last_name}</span>
-                  <span>{roleLabel(employee.role)}</span>
+                  <span>{roleLabel(t, employee.role)}</span>
                   <span className="muted-small">{employee.username ?? "—"}</span>
-                  <span className="pill">{employee.is_active ? "aktif" : "pasif"}</span>
+                  <span className="pill">{employee.is_active ? t("common.active") : t("common.inactive")}</span>
                   <button className="btn sm ghost" onClick={() => openEdit(employee)}>
-                    Düzenle
+                    {t("common.edit")}
                   </button>
                 </div>
               ))}
@@ -230,39 +235,39 @@ export function EmployeeManagementPage() {
 
       <div className={`overlay${modalOpen ? " open" : ""}`}>
         <div className="modal">
-          <div className="modal-head">{editing ? "Hesabı düzenle" : "Yeni hesap oluştur"}</div>
+          <div className="modal-head">{editing ? t("employees.editTitle") : t("employees.createTitle")}</div>
           <div className="modal-body">
             <div className="form-grid">
               <div className="field">
-                <label>Ad</label>
+                <label>{t("common.firstName")}</label>
                 <input className="input" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
               </div>
               <div className="field">
-                <label>Soyad</label>
+                <label>{t("common.lastName")}</label>
                 <input className="input" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
               </div>
             </div>
 
             {!editing && (
               <div className="field">
-                <label>Rol (bir alt seviye)</label>
+                <label>{t("employees.roleLabel")}</label>
                 {showRoleSelect ? (
                   <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     {targetRoles.map((r) => (
-                      <option key={r} value={r}>{roleLabel(r)}</option>
+                      <option key={r} value={r}>{roleLabel(t, r)}</option>
                     ))}
                   </select>
                 ) : (
-                  <input className="input" value={roleLabel(form.role)} disabled />
+                  <input className="input" value={roleLabel(t, form.role)} disabled />
                 )}
               </div>
             )}
 
             {!editing && creatorRole === "region_manager" && (
               <div className="field">
-                <label>Hedef şube</label>
+                <label>{t("employees.targetBranch")}</label>
                 <select className="input" value={form.branch_id} onChange={(e) => setForm({ ...form, branch_id: e.target.value })}>
-                  <option value="">Seçiniz...</option>
+                  <option value="">{t("common.selectPlaceholder")}</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
@@ -272,9 +277,9 @@ export function EmployeeManagementPage() {
 
             {!editing && creatorRole === "general_manager" && (
               <div className="field">
-                <label>Hedef bölge</label>
+                <label>{t("employees.targetRegion")}</label>
                 <select className="input" value={form.region_id} onChange={(e) => setForm({ ...form, region_id: e.target.value })}>
-                  <option value="">Seçiniz...</option>
+                  <option value="">{t("common.selectPlaceholder")}</option>
                   {regions.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
@@ -284,11 +289,11 @@ export function EmployeeManagementPage() {
 
             <div className="form-grid">
               <div className="field">
-                <label>Yaş</label>
+                <label>{t("common.age")}</label>
                 <input className="input" type="number" min={0} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
               </div>
               <div className="field">
-                <label>Adres</label>
+                <label>{t("common.address")}</label>
                 <input className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
               </div>
             </div>
@@ -296,11 +301,11 @@ export function EmployeeManagementPage() {
             {!editing && (
               <div className="form-grid">
                 <div className="field">
-                  <label>Kullanıcı adı</label>
+                  <label>{t("employees.username")}</label>
                   <input className="input" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
                 </div>
                 <div className="field">
-                  <label>Geçici şifre</label>
+                  <label>{t("employees.tempPassword")}</label>
                   <input className="input" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 </div>
               </div>
@@ -308,7 +313,7 @@ export function EmployeeManagementPage() {
 
             {(canPickPin || canEditPin) && (
               <div className="field">
-                <label>Manager PIN {editing ? "(değiştirmek için doldurun)" : "(iade onayı için)"}</label>
+                <label>{editing ? t("employees.managerPinEdit") : t("employees.managerPinCreate")}</label>
                 <input className="input" value={form.manager_pin} onChange={(e) => setForm({ ...form, manager_pin: e.target.value })} />
               </div>
             )}
@@ -321,22 +326,22 @@ export function EmployeeManagementPage() {
                     checked={form.is_active}
                     onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                   />{" "}
-                  Aktif
+                  {t("employees.activeCheckbox")}
                 </label>
               </div>
             )}
 
             <div className="hintbox">
-              Rol listesi role göre kısıtlıdır: {roleLabel(creatorRole)} sadece {targetRoles.map(roleLabel).join(" / ")} açabilir.
+              {t("employees.hintRestriction", { creator: creatorLabel, targets: targetLabels })}
             </div>
             {saveError && <div className="error-text">{saveError}</div>}
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setModalOpen(false)}>
-              Vazgeç
+              {t("common.cancel")}
             </button>
             <button className="btn primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Kaydediliyor..." : editing ? "Kaydet" : "Oluştur"}
+              {saving ? t("common.saving") : editing ? t("common.save") : t("employees.create")}
             </button>
           </div>
         </div>

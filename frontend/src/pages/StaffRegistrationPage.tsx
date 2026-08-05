@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { createEmployee, listEmployees, updateEmployee } from "../api/employees";
@@ -18,6 +19,7 @@ const EMPTY_FORM: FormState = { first_name: "", last_name: "", age: "", address:
 // prototype/personel-kaydi.html'in React karşılığı (UC-20) — login'siz personel (kasap, manav, raf
 // düzenleyici vb.), sadece operations_chief kullanır, sabit role: "staff", username/password/PIN yok.
 export function StaffRegistrationPage() {
+  const { t } = useTranslation();
   const { token } = useAuth();
 
   const [staff, setStaff] = useState<EmployeeOut[]>([]);
@@ -38,7 +40,7 @@ export function StaffRegistrationPage() {
     try {
       setStaff(await listEmployees(token));
     } catch {
-      setLoadError("Personel listesi alınamadı.");
+      setLoadError(t("staff.loadError"));
     } finally {
       setLoading(false);
     }
@@ -102,9 +104,9 @@ export function StaffRegistrationPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? `Kaydedilemedi (${err.status}).`);
+        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
       } else {
-        setSaveError("Kaydedilemedi.");
+        setSaveError(t("common.saveFailed"));
       }
     } finally {
       setSaving(false);
@@ -112,48 +114,48 @@ export function StaffRegistrationPage() {
   }
 
   return (
-    <AppShell pageTitle="Personel kayıtları">
-      <div className="scope">Login'siz personel (kasap, manav, raf düzenleyici vb.) — sadece vardiya amaçlı kayıt</div>
+    <AppShell pageTitle={t("nav.staffRecords")}>
+      <div className="scope">{t("staff.scopeDesc")}</div>
       <div className="panel">
         <div className="panel-head">
-          Personel
+          {t("staff.title")}
           <span className="filters">
             <input
               className="input"
               style={{ height: 34 }}
-              placeholder="Ara: ad soyad"
+              placeholder={t("staff.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <button className="btn sm primary" onClick={openCreate}>
-              Yeni personel
+              {t("staff.newStaff")}
             </button>
           </span>
         </div>
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
           {loading ? (
-            <div className="muted-small">Yükleniyor...</div>
+            <div className="muted-small">{t("common.loading")}</div>
           ) : (
             <>
               <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr .8fr" }}>
-                <span>Ad soyad</span>
-                <span>Yaş</span>
-                <span>Durum</span>
+                <span>{t("staff.colName")}</span>
+                <span>{t("staff.colAge")}</span>
+                <span>{t("staff.colStatus")}</span>
                 <span />
               </div>
               {filtered.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
-                  Kayıt yok.
+                  {t("common.noRecords")}
                 </div>
               )}
               {filtered.map((employee) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr .8fr" }} key={employee.id}>
                   <span>{employee.first_name} {employee.last_name}</span>
                   <span>{employee.age}</span>
-                  <span className="pill">{employee.is_active ? "aktif" : "pasif"}</span>
+                  <span className="pill">{employee.is_active ? t("common.active") : t("common.inactive")}</span>
                   <button className="btn sm ghost" onClick={() => openEdit(employee)}>
-                    Düzenle
+                    {t("common.edit")}
                   </button>
                 </div>
               ))}
@@ -164,25 +166,25 @@ export function StaffRegistrationPage() {
 
       <div className={`overlay${modalOpen ? " open" : ""}`}>
         <div className="modal">
-          <div className="modal-head">{editing ? "Personeli düzenle" : "Login'siz personel kaydı"}</div>
+          <div className="modal-head">{editing ? t("staff.editTitle") : t("staff.createTitle")}</div>
           <div className="modal-body">
             <div className="form-grid">
               <div className="field">
-                <label>Ad</label>
+                <label>{t("common.firstName")}</label>
                 <input className="input" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
               </div>
               <div className="field">
-                <label>Soyad</label>
+                <label>{t("common.lastName")}</label>
                 <input className="input" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
               </div>
             </div>
             <div className="form-grid">
               <div className="field">
-                <label>Yaş</label>
+                <label>{t("common.age")}</label>
                 <input className="input" type="number" min={0} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
               </div>
               <div className="field">
-                <label>Adres</label>
+                <label>{t("common.address")}</label>
                 <input className="input" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
               </div>
             </div>
@@ -194,19 +196,19 @@ export function StaffRegistrationPage() {
                     checked={form.is_active}
                     onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                   />{" "}
-                  Aktif
+                  {t("staff.activeCheckbox")}
                 </label>
               </div>
             )}
-            <div className="hintbox">Kullanıcı adı / şifre yok — sisteme giriş yapmaz. Rol: "Personel". Yalnızca vardiya için kayıt.</div>
+            <div className="hintbox">{t("staff.hint")}</div>
             {saveError && <div className="error-text">{saveError}</div>}
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setModalOpen(false)}>
-              Vazgeç
+              {t("common.cancel")}
             </button>
             <button className="btn primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Kaydediliyor..." : editing ? "Kaydet" : "Kaydet"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>

@@ -1,16 +1,10 @@
 import { useEffect, useState, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { getBranding, getFeatures, listCompanies, updateBranding, updateFeature } from "../api/companies";
 import { ApiError } from "../api/client";
 import type { BrandingOut, CompanyOut, FeatureOut } from "../types/company";
-
-const FEATURE_LABELS: Record<string, string> = {
-  layout_onerisi: "Layout önerisi",
-  mobil_app: "Mobil app",
-  merkez_depo_senaryosu: "Merkez depo senaryosu",
-  kpi_modulu: "KPI modülü",
-};
 
 const MAX_LOGO_FILE_BYTES = 290_000; // backend'deki ~300KB base64 sınırıyla eşleşen ham dosya sınırı
 
@@ -28,6 +22,8 @@ function readFileAsDataUrl(file: File): Promise<string> {
 // (var olan çalışanla çıkarım yapılıyor, ayrı bir config yok) bu turun kapsamı dışı (kullanıcı kararı,
 // 2026-08-03) — nav'daki o iki öğe path'siz bırakıldı.
 export function VendorCustomersPage() {
+  const { t } = useTranslation();
+  const FEATURE_LABELS: Record<string, string> = t("vendor.features", { returnObjects: true }) as Record<string, string>;
   const { token } = useAuth();
 
   const [companies, setCompanies] = useState<CompanyOut[]>([]);
@@ -50,7 +46,7 @@ export function VendorCustomersPage() {
     try {
       setCompanies(await listCompanies(token));
     } catch {
-      setLoadError("Müşteri listesi alınamadı.");
+      setLoadError(t("vendor.loadError"));
     } finally {
       setLoading(false);
     }
@@ -80,7 +76,7 @@ export function VendorCustomersPage() {
       setFeatures(featureData);
       setBranding(brandingData);
     } catch {
-      setSaveError("Müşteri detayları alınamadı.");
+      setSaveError(t("vendor.detailsLoadError"));
     } finally {
       setModalLoading(false);
     }
@@ -94,7 +90,7 @@ export function VendorCustomersPage() {
       await updateFeature(token, managing.id, featureName, enabled);
       setFeatures((prev) => prev.map((f) => (f.feature_name === featureName ? { ...f, enabled } : f)));
     } catch (err) {
-      setSaveError(err instanceof ApiError ? `Kaydedilemedi (${err.status}).` : "Kaydedilemedi.");
+      setSaveError(err instanceof ApiError ? t("common.saveFailedWithStatus", { status: err.status }) : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -106,18 +102,18 @@ export function VendorCustomersPage() {
     if (!file || !branding) return;
     setLogoError(null);
     if (!file.type.startsWith("image/")) {
-      setLogoError("Sadece görsel dosyaları kabul edilir.");
+      setLogoError(t("vendor.onlyImages"));
       return;
     }
     if (file.size > MAX_LOGO_FILE_BYTES) {
-      setLogoError("Dosya çok büyük (maks. ~280KB).");
+      setLogoError(t("vendor.fileTooLarge"));
       return;
     }
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setBranding({ ...branding, logo_url: dataUrl });
     } catch {
-      setLogoError("Dosya okunamadı.");
+      setLogoError(t("vendor.fileReadError"));
     }
   }
 
@@ -133,23 +129,23 @@ export function VendorCustomersPage() {
       });
       setBranding(updated);
     } catch (err) {
-      setSaveError(err instanceof ApiError ? `Kaydedilemedi (${err.status}).` : "Kaydedilemedi.");
+      setSaveError(err instanceof ApiError ? t("common.saveFailedWithStatus", { status: err.status }) : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <AppShell pageTitle="Müşteriler (tenant)">
-      <div className="scope">Platform yönetimi — tenant üstü</div>
+    <AppShell pageTitle={t("nav.customers")}>
+      <div className="scope">{t("vendor.scopeDesc")}</div>
       <div className="panel">
         <div className="panel-head">
-          Müşteriler
+          {t("vendor.title")}
           <span className="filters">
             <input
               className="input"
               style={{ height: 34 }}
-              placeholder="Ara: şirket / subdomain"
+              placeholder={t("vendor.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -158,17 +154,17 @@ export function VendorCustomersPage() {
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
           {loading ? (
-            <div className="muted-small">Yükleniyor...</div>
+            <div className="muted-small">{t("common.loading")}</div>
           ) : (
             <>
               <div className="thead" style={{ gridTemplateColumns: "2fr 1fr .8fr" }}>
-                <span>Şirket</span>
-                <span>Subdomain</span>
+                <span>{t("vendor.colCompany")}</span>
+                <span>{t("vendor.colSubdomain")}</span>
                 <span />
               </div>
               {filtered.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
-                  Kayıt yok.
+                  {t("common.noRecords")}
                 </div>
               )}
               {filtered.map((company) => (
@@ -176,7 +172,7 @@ export function VendorCustomersPage() {
                   <span>{company.name}</span>
                   <span className="muted-small">{company.subdomain}</span>
                   <button className="btn sm ghost" onClick={() => openManage(company)}>
-                    Yönet
+                    {t("vendor.manage")}
                   </button>
                 </div>
               ))}
@@ -187,14 +183,14 @@ export function VendorCustomersPage() {
 
       <div className={`overlay${managing ? " open" : ""}`}>
         <div className="modal lg">
-          <div className="modal-head">Müşteri yönetimi — {managing?.name}</div>
+          <div className="modal-head">{t("vendor.modalTitleWithName", { name: managing?.name })}</div>
           <div className="modal-body">
             {modalLoading ? (
-              <div className="muted-small">Yükleniyor...</div>
+              <div className="muted-small">{t("common.loading")}</div>
             ) : (
               <>
                 <div className="field">
-                  <label>Aktif feature'lar (company_features)</label>
+                  <label>{t("vendor.featuresLabel")}</label>
                   {features.map((f) => (
                     <div key={f.feature_name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                       <input
@@ -210,12 +206,12 @@ export function VendorCustomersPage() {
 
                 <div className="form-grid">
                   <div className="field">
-                    <label>Logo</label>
+                    <label>{t("vendor.logo")}</label>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {branding?.logo_url && (
                         <img
                           src={branding.logo_url}
-                          alt="Logo önizleme"
+                          alt={t("vendor.logoPreviewAlt")}
                           style={{ width: 44, height: 44, objectFit: "contain", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}
                         />
                       )}
@@ -226,14 +222,14 @@ export function VendorCustomersPage() {
                           className="btn ghost sm"
                           onClick={() => branding && setBranding({ ...branding, logo_url: null })}
                         >
-                          Kaldır
+                          {t("vendor.remove")}
                         </button>
                       )}
                     </div>
                     {logoError && <div className="error-text">{logoError}</div>}
                   </div>
                   <div className="field">
-                    <label>Ana renk</label>
+                    <label>{t("vendor.primaryColor")}</label>
                     <input
                       className="input"
                       type="color"
@@ -243,7 +239,7 @@ export function VendorCustomersPage() {
                   </div>
                 </div>
                 <div className="field">
-                  <label>İşletme adı (branding)</label>
+                  <label>{t("vendor.businessName")}</label>
                   <input
                     className="input"
                     value={branding?.display_name ?? ""}
@@ -256,10 +252,10 @@ export function VendorCustomersPage() {
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setManaging(null)}>
-              Kapat
+              {t("vendor.close")}
             </button>
             <button className="btn primary" disabled={saving || modalLoading} onClick={saveBranding}>
-              {saving ? "Kaydediliyor..." : "Branding'i kaydet"}
+              {saving ? t("common.saving") : t("vendor.saveBranding")}
             </button>
           </div>
         </div>

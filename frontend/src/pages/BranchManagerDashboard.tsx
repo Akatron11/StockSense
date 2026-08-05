@@ -26,42 +26,42 @@ export function BranchManagerDashboard() {
     setError(null);
     getSalesReport(token, days)
       .then(setReport)
-      .catch(() => setError("Rapor alınamadı."))
+      .catch(() => setError(t("reports.reportLoadError")))
       .finally(() => setLoading(false));
   }, [token, days]);
 
   return (
     <AppShell pageTitle={activeLabel}>
       <div className="toolbar">
-        <div className="scope">Kapsam: {report?.scope_label ?? "kendi şubesi"}</div>
+        <div className="scope">{t("reports.scope", { label: report?.scope_label ?? t("reports.defaultScope") })}</div>
         <RangeSelector value={days} onChange={setDays} />
       </div>
 
       {error && <div className="error-text">{error}</div>}
       {loading || !report ? (
-        <div className="muted-small">Yükleniyor...</div>
+        <div className="muted-small">{t("common.loading")}</div>
       ) : (
         <>
           <section className="cards">
             <div className="card">
-              <div className="lbl">Toplam satış</div>
+              <div className="lbl">{t("reports.totalSales")}</div>
               <div className="page-title">{report.total_sales.toFixed(2)}</div>
             </div>
             <div className="card">
-              <div className="lbl">Net kâr marjı</div>
+              <div className="lbl">{t("reports.netMargin")}</div>
               <div className="page-title">
                 {report.profit_margin_pct !== null ? `%${report.profit_margin_pct.toFixed(1)}` : "—"}
               </div>
               {report.cost_data_coverage_pct < 100 && (
-                <div className="muted-small">Maliyet verisi kapsamı: %{report.cost_data_coverage_pct.toFixed(0)}</div>
+                <div className="muted-small">{t("reports.costCoverage", { pct: report.cost_data_coverage_pct.toFixed(0) })}</div>
               )}
             </div>
             <div className="card">
-              <div className="lbl">Düşük stoktaki ürün</div>
+              <div className="lbl">{t("reports.lowStock")}</div>
               <div className="page-title">{report.low_stock_count}</div>
             </div>
             <div className="card">
-              <div className="lbl">İşlem sayısı</div>
+              <div className="lbl">{t("reports.transactions")}</div>
               <div className="page-title">{report.transaction_count}</div>
             </div>
           </section>
@@ -69,7 +69,7 @@ export function BranchManagerDashboard() {
           <section className="grid2">
             <div className="panel">
               <div className="panel-head">
-                Satış trendi <span className="hint">Net satış — son {report.days} gün</span>
+                {t("reports.salesTrend")} <span className="hint">{t("reports.netSalesLast", { days: report.days })}</span>
               </div>
               <div className="panel-body">
                 <SalesTrendChart trend={report.trend} />
@@ -77,9 +77,9 @@ export function BranchManagerDashboard() {
             </div>
 
             <div className="panel">
-              <div className="panel-head">En çok satan ürünler</div>
+              <div className="panel-head">{t("reports.topProducts")}</div>
               <div className="panel-body">
-                {report.top_products.length === 0 && <div className="muted-small">Seçili aralıkta satış yok.</div>}
+                {report.top_products.length === 0 && <div className="muted-small">{t("reports.noSalesInRange")}</div>}
                 {report.top_products.map((p, idx) => (
                   <div className="item" key={p.product_id}>
                     <span className="rank">{idx + 1}</span>

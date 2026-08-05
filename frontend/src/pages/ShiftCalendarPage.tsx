@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { assignShift, listRoster, listWeekShifts } from "../api/shifts";
 import { ApiError } from "../api/client";
 import type { RosterEmployee, ShiftItem, ShiftUpsertPayload } from "../types/shift";
-
-const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 // d.toISOString() UTC'ye çevirir — yerel saat UTC'den ileriyse (örn. TR, UTC+3) tarihi bir gün
 // geriye kaydırabilir. Yerel tarih bileşenlerinden elle string kurmak bu sorunu önler.
@@ -44,6 +43,8 @@ interface CellForm {
 // personel (branch_manager hariç, kullanıcı kararı 2026-08-03). Hücreye tıklayınca o personel/gün için
 // vardiya saati ya da off ataması yapılır (backend'de upsert).
 export function ShiftCalendarPage() {
+  const { t } = useTranslation();
+  const dayLabels = t("shifts.dayLabels", { returnObjects: true }) as string[];
   const { token } = useAuth();
 
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
@@ -70,7 +71,7 @@ export function ShiftCalendarPage() {
       setRoster(rosterData);
       setShifts(shiftData);
     } catch {
-      setLoadError("Vardiya takvimi alınamadı.");
+      setLoadError(t("shifts.loadError"));
     } finally {
       setLoading(false);
     }
@@ -116,9 +117,9 @@ export function ShiftCalendarPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? `Kaydedilemedi (${err.status}).`);
+        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
       } else {
-        setSaveError("Kaydedilemedi.");
+        setSaveError(t("common.saveFailed"));
       }
     } finally {
       setSaving(false);
@@ -126,9 +127,9 @@ export function ShiftCalendarPage() {
   }
 
   return (
-    <AppShell pageTitle="Vardiya takvimi">
+    <AppShell pageTitle={t("nav.shiftCalendar")}>
       <div className="toolbar">
-        <div className="scope">Şubedeki tüm personel (login'li + login'siz) — hücreye tıklayınca vardiya/off atanır</div>
+        <div className="scope">{t("shifts.scopeDesc")}</div>
         <div className="filters">
           <button className="btn sm ghost" onClick={() => setWeekStart(addDays(weekStart, -7))}>◄</button>
           <span className="pill">
@@ -141,18 +142,18 @@ export function ShiftCalendarPage() {
       <div className="panel pad">
         {loadError && <div className="error-text">{loadError}</div>}
         {loading ? (
-          <div className="muted-small">Yükleniyor...</div>
+          <div className="muted-small">{t("common.loading")}</div>
         ) : (
           <>
             <div className="cal-head" style={{ display: "grid", gridTemplateColumns: "1.4fr repeat(7,1fr)", gap: 6 }}>
-              <span className="who">Personel</span>
+              <span className="who">{t("shifts.colStaff")}</span>
               {weekDays.map((d, i) => (
-                <span key={i}>{DAY_LABELS[i]} {d.getDate()}</span>
+                <span key={i}>{dayLabels[i]} {d.getDate()}</span>
               ))}
             </div>
             {roster.length === 0 && (
               <div className="muted-small" style={{ padding: "12px 0" }}>
-                Personel yok.
+                {t("shifts.noStaff")}
               </div>
             )}
             {roster.map((employee) => (
@@ -183,7 +184,7 @@ export function ShiftCalendarPage() {
                         color: dayOff ? "var(--muted)" : "inherit",
                       }}
                     >
-                      {dayOff ? "off" : shift ? `${shift.start_time?.slice(0, 5)}-${shift.end_time?.slice(0, 5)}` : ""}
+                      {dayOff ? t("shifts.off") : shift ? `${shift.start_time?.slice(0, 5)}-${shift.end_time?.slice(0, 5)}` : ""}
                     </div>
                   );
                 })}
@@ -206,13 +207,13 @@ export function ShiftCalendarPage() {
                   checked={cellForm?.isDayOff ?? false}
                   onChange={(e) => cellForm && setCellForm({ ...cellForm, isDayOff: e.target.checked })}
                 />{" "}
-                Off (izinli gün)
+                {t("shifts.dayOff")}
               </label>
             </div>
             {!cellForm?.isDayOff && (
               <div className="form-grid">
                 <div className="field">
-                  <label>Başlangıç</label>
+                  <label>{t("shifts.start")}</label>
                   <input
                     className="input"
                     type="time"
@@ -221,7 +222,7 @@ export function ShiftCalendarPage() {
                   />
                 </div>
                 <div className="field">
-                  <label>Bitiş</label>
+                  <label>{t("shifts.end")}</label>
                   <input
                     className="input"
                     type="time"
@@ -235,10 +236,10 @@ export function ShiftCalendarPage() {
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setCellForm(null)}>
-              Vazgeç
+              {t("common.cancel")}
             </button>
             <button className="btn primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Kaydediliyor..." : "Kaydet"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>

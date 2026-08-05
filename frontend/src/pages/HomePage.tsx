@@ -35,15 +35,10 @@ export function HomePage() {
   return (
     <AppShell pageTitle={activeLabel}>
       <div className="panel">
-        <div className="panel-head">Hoş geldin</div>
+        <div className="panel-head">{t("home.welcome")}</div>
         <div className="panel-body">
-          <p>
-            {user?.full_name} olarak giriş yaptın ({user?.role}).
-          </p>
-          <p className="muted-small">
-            Rol-bazlı pano içeriği henüz kurulmadı — bu, rol-bazlı nav menüsünü doğrulamak için geçici bir yer
-            tutucu.
-          </p>
+          <p>{t("home.loggedInAs", { name: user?.full_name, role: user?.role })}</p>
+          <p className="muted-small">{t("home.placeholderNote")}</p>
         </div>
       </div>
     </AppShell>

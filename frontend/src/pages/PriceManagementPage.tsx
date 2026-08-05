@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { listProducts } from "../api/products";
@@ -20,6 +21,7 @@ interface PriceRow {
 // zaten hazırdı (GET /api/products + GET/PATCH /api/stock, price_override zaten sadece seller_manager'a
 // açık) — burada sadece frontend eklendi, backend'e dokunulmadı.
 export function PriceManagementPage() {
+  const { t } = useTranslation();
   const { token } = useAuth();
 
   const [rows, setRows] = useState<PriceRow[]>([]);
@@ -53,7 +55,7 @@ export function PriceManagementPage() {
         }),
       );
     } catch {
-      setLoadError("Fiyat listesi alınamadı.");
+      setLoadError(t("price.loadError"));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export function PriceManagementPage() {
       setEditing(null);
       await load();
     } catch (err) {
-      setSaveError(err instanceof ApiError ? `Kaydedilemedi (${err.status}).` : "Kaydedilemedi.");
+      setSaveError(err instanceof ApiError ? t("common.saveFailedWithStatus", { status: err.status }) : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -102,24 +104,24 @@ export function PriceManagementPage() {
       setEditing(null);
       await load();
     } catch (err) {
-      setSaveError(err instanceof ApiError ? `Kaldırılamadı (${err.status}).` : "Kaldırılamadı.");
+      setSaveError(err instanceof ApiError ? t("price.removeFailedWithStatus", { status: err.status }) : t("price.removeFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <AppShell pageTitle="Fiyat yönetimi">
-      <div className="scope">Kapsam: kendi şubesi · boş override → varsayılan fiyat geçerli</div>
+    <AppShell pageTitle={t("nav.priceManagement")}>
+      <div className="scope">{t("price.scopeDesc")}</div>
 
       <div className="panel">
         <div className="panel-head">
-          Ürün fiyatları
+          {t("price.title")}
           <span className="filters">
             <input
               className="input"
               style={{ height: 34 }}
-              placeholder="Ara: ürün / SKU"
+              placeholder={t("price.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -128,29 +130,29 @@ export function PriceManagementPage() {
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
           {loading ? (
-            <div className="muted-small">Yükleniyor...</div>
+            <div className="muted-small">{t("common.loading")}</div>
           ) : (
             <>
               <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }}>
-                <span>Ürün</span>
-                <span>Varsayılan</span>
-                <span>Şube override</span>
-                <span>Geçerli</span>
+                <span>{t("price.colProduct")}</span>
+                <span>{t("price.colDefault")}</span>
+                <span>{t("price.colOverride")}</span>
+                <span>{t("price.colEffective")}</span>
                 <span />
               </div>
               {filtered.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
-                  Kayıt yok.
+                  {t("common.noRecords")}
                 </div>
               )}
               {filtered.map((row) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }} key={row.product_id}>
                   <span>{row.name}</span>
                   <span>{row.default_price.toFixed(2)}</span>
-                  <span>{row.price_override !== null ? row.price_override.toFixed(2) : <span className="pill">yok</span>}</span>
+                  <span>{row.price_override !== null ? row.price_override.toFixed(2) : <span className="pill">{t("common.none")}</span>}</span>
                   <span>{row.effective_price.toFixed(2)}</span>
                   <button className="btn sm ghost" onClick={() => openEdit(row)}>
-                    Düzenle
+                    {t("common.edit")}
                   </button>
                 </div>
               ))}
@@ -161,24 +163,24 @@ export function PriceManagementPage() {
 
       <div className={`overlay${editing ? " open" : ""}`}>
         <div className="modal">
-          <div className="modal-head">Şube fiyatı — override</div>
+          <div className="modal-head">{t("price.modalTitle")}</div>
           <div className="modal-body">
             <div className="kv">
-              <span>Ürün</span>
+              <span>{t("price.product")}</span>
               <span>{editing?.name}</span>
             </div>
             <div className="kv">
-              <span>Varsayılan fiyat (default_price)</span>
+              <span>{t("price.defaultPrice")}</span>
               <span>{editing?.default_price.toFixed(2)}</span>
             </div>
             <div className="field">
-              <label>Şube fiyatı (price_override)</label>
+              <label>{t("price.overrideLabel")}</label>
               <input
                 className="input"
                 type="number"
                 min={0}
                 step="0.01"
-                placeholder="boş bırak → varsayılan geçerli"
+                placeholder={t("price.overridePlaceholder")}
                 value={overrideInput}
                 onChange={(e) => setOverrideInput(e.target.value)}
               />
@@ -187,10 +189,10 @@ export function PriceManagementPage() {
           </div>
           <div className="modal-foot">
             <button className="btn ghost" disabled={saving} onClick={handleClear}>
-              Override kaldır
+              {t("price.removeOverride")}
             </button>
             <button className="btn primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Kaydediliyor..." : "Kaydet"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>

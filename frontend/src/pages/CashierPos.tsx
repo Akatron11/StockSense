@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { Avatar } from "../components/Avatar";
@@ -16,13 +17,14 @@ interface CartLine {
   quantity: number;
 }
 
-function formatSaleDate(iso: string): string {
+function formatSaleDate(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 // prototype/kasiyer-pos.html'in React karşılığı — kasıtlı olarak AppShell/sidebar kullanmıyor (tam ekran POS).
 export function CashierPos() {
+  const { t, i18n } = useTranslation();
   const { token, user, logout } = useAuth();
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -60,7 +62,7 @@ export function CashierPos() {
     if (!token) return;
     listProducts(token)
       .then(setCatalog)
-      .catch(() => setCatalogError("Ürün listesi yüklenemedi."));
+      .catch(() => setCatalogError(t("pos.catalogLoadError")));
   }, [token]);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function CashierPos() {
     setSaleListError(null);
     listRecentSales(token)
       .then(setRecentSales)
-      .catch(() => setSaleListError("Satış listesi yüklenemedi."));
+      .catch(() => setSaleListError(t("pos.saleListError")));
   }, [token, returnModalOpen]);
 
   if (!token) return null;
@@ -93,13 +95,13 @@ export function CashierPos() {
     try {
       const results = await searchProducts(token as string, scanQuery.trim());
       if (results.length === 0) {
-        setScanError("Ürün bulunamadı.");
+        setScanError(t("pos.productNotFound"));
         return;
       }
       addToCart(results[0]);
       setScanQuery("");
     } catch {
-      setScanError("Arama sırasında hata oluştu.");
+      setScanError(t("pos.searchError"));
     }
   }
 
@@ -127,9 +129,9 @@ export function CashierPos() {
       setPayModalOpen(false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setSaleError("Sepetteki bazı ürünlerde yeterli stok yok.");
+        setSaleError(t("pos.insufficientStock"));
       } else {
-        setSaleError("Satış tamamlanamadı.");
+        setSaleError(t("pos.saleFailed"));
       }
     } finally {
       setSaleSubmitting(false);
@@ -154,7 +156,7 @@ export function CashierPos() {
       }
       setReturnQuantities(initial);
     } catch {
-      setSaleDetailError("Satış detayı yüklenemedi.");
+      setSaleDetailError(t("pos.saleDetailError"));
     }
   }
 
@@ -173,14 +175,14 @@ export function CashierPos() {
     e.preventDefault();
     setReturnError(null);
     if (!selectedSale) {
-      setReturnError("Önce bir satış seçin.");
+      setReturnError(t("pos.selectSaleFirst"));
       return;
     }
     const items = Object.entries(returnQuantities)
       .filter(([, quantity]) => quantity > 0)
       .map(([productId, quantity]) => ({ product_id: Number(productId), quantity }));
     if (items.length === 0) {
-      setReturnError("En az bir ürün seçin.");
+      setReturnError(t("pos.selectAtLeastOne"));
       return;
     }
     setReturnSubmitting(true);
@@ -191,7 +193,9 @@ export function CashierPos() {
       resetReturnState();
       setPinModalOpen(true);
     } catch (err) {
-      setReturnError(err instanceof ApiError ? `İade başlatılamadı (${err.status}).` : "İade başlatılamadı.");
+      setReturnError(
+        err instanceof ApiError ? t("pos.returnFailedWithStatus", { status: err.status }) : t("pos.returnFailed"),
+      );
     } finally {
       setReturnSubmitting(false);
     }
@@ -209,16 +213,16 @@ export function CashierPos() {
       setPendingReturnId(null);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        setPinError("PIN hatalı.");
+        setPinError(t("pos.pinInvalid"));
       } else {
-        setPinError("Onay tamamlanamadı.");
+        setPinError(t("pos.completeFailed"));
       }
     } finally {
       setPinSubmitting(false);
     }
   }
 
-  const roleText = user ? roleLabel(user.role) : "";
+  const roleText = user ? roleLabel(t, user.role) : "";
 
   return (
     <div>
@@ -236,24 +240,28 @@ export function CashierPos() {
             </div>
             <div className="um-div" />
             <div className="um-row">
-              Dil / Language
+              {t("chrome.language")}
               <span className="um-lang">
-                <span className="on">TR</span>
+                <span className={i18n.language === "tr" ? "on" : ""} onClick={() => i18n.changeLanguage("tr")} style={{ cursor: "pointer" }}>
+                  TR
+                </span>
                 <span className="sep" />
-                <span>EN</span>
+                <span className={i18n.language === "en" ? "on" : ""} onClick={() => i18n.changeLanguage("en")} style={{ cursor: "pointer" }}>
+                  EN
+                </span>
               </span>
             </div>
             {user?.role !== "cashier" && (
               <>
                 <div className="um-div" />
                 <Link to="/" className="um-row um-row-clickable">
-                  Panele dön
+                  {t("pos.backToPanel")}
                 </Link>
               </>
             )}
             <div className="um-div" />
             <div className="um-row um-row-clickable" onClick={logout}>
-              Çıkış
+              {t("chrome.logout")}
             </div>
           </div>
         </div>
@@ -263,12 +271,12 @@ export function CashierPos() {
         <section className="panel pad">
           <form className="scan" onSubmit={handleSearch}>
             <input
-              placeholder="Barkod okut / SKU gir"
+              placeholder={t("pos.scanPlaceholder")}
               value={scanQuery}
               onChange={(e) => setScanQuery(e.target.value)}
             />
             <button className="btn" type="submit">
-              Ara
+              {t("pos.search")}
             </button>
           </form>
           {scanError && <div className="pos-error">{scanError}</div>}
@@ -293,20 +301,20 @@ export function CashierPos() {
                 <span>{lastScanned.name}</span>
                 <span className="muted-small">{lastScanned.sku}</span>
               </div>
-              <span className="skt">SKT: {lastScanned.best_before_date ?? "—"}</span>
+              <span className="skt">{t("reports.bbd", { date: lastScanned.best_before_date ?? "—" })}</span>
             </div>
           )}
 
           <div className="cart-head">
-            <span>Ürün</span>
-            <span>Adet</span>
-            <span>Birim fiyat</span>
-            <span>Tutar</span>
+            <span>{t("pos.product")}</span>
+            <span>{t("pos.quantity")}</span>
+            <span>{t("pos.unitPrice")}</span>
+            <span>{t("pos.amount")}</span>
             <span />
           </div>
           {cart.length === 0 && (
             <div className="muted-small" style={{ padding: "12px 0" }}>
-              Sepet boş.
+              {t("pos.cartEmpty")}
             </div>
           )}
           {cart.map((line) => (
@@ -321,7 +329,7 @@ export function CashierPos() {
               />
               <span>{line.product.default_price.toFixed(2)}</span>
               <span>{(line.product.default_price * line.quantity).toFixed(2)}</span>
-              <button className="rm" onClick={() => removeLine(line.product.id)} title="Kaldır">
+              <button className="rm" onClick={() => removeLine(line.product.id)} title={t("vendor.remove")}>
                 ×
               </button>
             </div>
@@ -331,29 +339,29 @@ export function CashierPos() {
         <aside className="panel pad">
           <div className="totals">
             <div className="trow">
-              <span>Ara toplam</span>
+              <span>{t("pos.subtotal")}</span>
               <span>{subtotal.toFixed(2)}</span>
             </div>
             <div className="trow">
-              <span>İndirim</span>
+              <span>{t("pos.discount")}</span>
               <span>0.00</span>
             </div>
             <div className="trow grand">
-              <span>Toplam</span>
+              <span>{t("pos.total")}</span>
               <span>{subtotal.toFixed(2)}</span>
             </div>
           </div>
           {lastSaleTotal !== null && (
             <div className="muted-small" style={{ marginTop: 10 }}>
-              Son satış tamamlandı — toplam {lastSaleTotal.toFixed(2)}
+              {t("pos.lastSaleCompleted", { total: lastSaleTotal.toFixed(2) })}
             </div>
           )}
           <div className="side-actions">
             <button className="btn primary" disabled={cart.length === 0} onClick={() => setPayModalOpen(true)}>
-              Satışı tamamla
+              {t("pos.completeSale")}
             </button>
             <button className="btn ghost" onClick={() => setReturnModalOpen(true)}>
-              İade / Değişim
+              {t("pos.returnExchange")}
             </button>
           </div>
         </aside>
@@ -362,26 +370,26 @@ export function CashierPos() {
       {/* ÖDEME MODALI */}
       <div className={`overlay${payModalOpen ? " open" : ""}`}>
         <div className="modal">
-          <div className="modal-head">Ödeme — satışı tamamla</div>
+          <div className="modal-head">{t("pos.payModalTitle")}</div>
           <div className="modal-body">
             <div className="kv">
-              <span>Toplam</span>
+              <span>{t("pos.total")}</span>
               <span>{subtotal.toFixed(2)}</span>
             </div>
             <div className="field">
-              <label>Ödeme yöntemi</label>
+              <label>{t("pos.paymentMethod")}</label>
               <div className="paytypes">
                 <div
                   className={`paytype${paymentMethod === "cash" ? " selected" : ""}`}
                   onClick={() => setPaymentMethod("cash")}
                 >
-                  Nakit
+                  {t("pos.cash")}
                 </div>
                 <div
                   className={`paytype${paymentMethod === "card" ? " selected" : ""}`}
                   onClick={() => setPaymentMethod("card")}
                 >
-                  Kart
+                  {t("pos.card")}
                 </div>
               </div>
             </div>
@@ -389,10 +397,10 @@ export function CashierPos() {
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setPayModalOpen(false)}>
-              Vazgeç
+              {t("common.cancel")}
             </button>
             <button className="btn primary" disabled={saleSubmitting} onClick={handleCompleteSale}>
-              {saleSubmitting ? "Onaylanıyor..." : "Onayla"}
+              {saleSubmitting ? t("pos.confirming") : t("pos.confirm")}
             </button>
           </div>
         </div>
@@ -402,16 +410,16 @@ export function CashierPos() {
       <div className={`overlay${returnModalOpen ? " open" : ""}`}>
         <div className="modal">
           <form onSubmit={handleInitiateReturn}>
-            <div className="modal-head">İade / Değişim</div>
+            <div className="modal-head">{t("pos.returnExchange")}</div>
             <div className="modal-body">
               {!selectedSale && (
                 <div>
                   <div className="field">
-                    <label>Son satışlar — iade edilecek satışı seçin</label>
+                    <label>{t("pos.recentSalesLabel")}</label>
                   </div>
                   {saleListError && <div className="pos-error">{saleListError}</div>}
                   {recentSales.length === 0 && !saleListError && (
-                    <div className="muted-small">Şubede henüz satış yok.</div>
+                    <div className="muted-small">{t("pos.noSalesYet")}</div>
                   )}
                   <div className="mini-list">
                     {recentSales.map((sale) => (
@@ -421,10 +429,10 @@ export function CashierPos() {
                         onClick={() => handleSelectSale(sale.id)}
                       >
                         <span>
-                          #{sale.id} — {formatSaleDate(sale.sale_date)}
+                          #{sale.id} — {formatSaleDate(sale.sale_date, i18n.language)}
                         </span>
                         <span className="muted-small">
-                          {sale.total.toFixed(2)} · {sale.payment_method === "cash" ? "Nakit" : "Kart"}
+                          {sale.total.toFixed(2)} · {sale.payment_method === "cash" ? t("pos.cash") : t("pos.card")}
                         </span>
                       </div>
                     ))}
@@ -436,9 +444,7 @@ export function CashierPos() {
               {selectedSale && (
                 <div>
                   <div className="field">
-                    <label>
-                      Satış #{selectedSale.id} — {formatSaleDate(selectedSale.sale_date)}
-                    </label>
+                    <label>{t("pos.selectedSaleLabel", { id: selectedSale.id, date: formatSaleDate(selectedSale.sale_date, i18n.language) })}</label>
                   </div>
                   <div className="mini-list">
                     {selectedSale.items.map((item) => {
@@ -460,7 +466,7 @@ export function CashierPos() {
                             />
                             {item.product_name}
                             {item.returnable_quantity === 0 && (
-                              <span className="muted-small">(iade edildi)</span>
+                              <span className="muted-small">{t("pos.alreadyReturned")}</span>
                             )}
                           </label>
                           {checked && (
@@ -480,14 +486,12 @@ export function CashierPos() {
                     })}
                   </div>
                   <button type="button" className="btn ghost sm" onClick={resetReturnState}>
-                    ← Farklı satış seç
+                    {t("pos.differentSale")}
                   </button>
                 </div>
               )}
 
-              <div className="hintbox">
-                Tamamlamak için yetkili onayı (PIN) gerekir — iade, onay anında kesinleşir.
-              </div>
+              <div className="hintbox">{t("pos.pinHint")}</div>
               {returnError && <div className="pos-error">{returnError}</div>}
             </div>
             <div className="modal-foot">
@@ -499,10 +503,10 @@ export function CashierPos() {
                   resetReturnState();
                 }}
               >
-                Vazgeç
+                {t("common.cancel")}
               </button>
               <button type="submit" className="btn primary" disabled={returnSubmitting || !selectedSale}>
-                {returnSubmitting ? "Gönderiliyor..." : "Tamamla"}
+                {returnSubmitting ? t("pos.submitting") : t("pos.complete")}
               </button>
             </div>
           </form>
@@ -513,10 +517,10 @@ export function CashierPos() {
       <div className={`overlay${pinModalOpen ? " open" : ""}`}>
         <div className="modal">
           <form onSubmit={handleCompletePin}>
-            <div className="modal-head">İade onayı — yetkili PIN</div>
+            <div className="modal-head">{t("pos.pinModalTitle")}</div>
             <div className="modal-body">
               <div className="field">
-                <label>Onaylayan PIN (4–6 hane)</label>
+                <label>{t("pos.pinLabel")}</label>
                 <input
                   className="input"
                   style={{ letterSpacing: "0.5em", width: 160 }}
@@ -526,18 +530,15 @@ export function CashierPos() {
                   maxLength={6}
                 />
               </div>
-              <div className="hintbox">
-                PIN, o şubede onay yetkisi olan kullanıcıyla eşleştirilir (Stock Manager, Seller Manager,
-                Operasyon Şefi ya da yardımcıları).
-              </div>
+              <div className="hintbox">{t("pos.pinHintFull")}</div>
               {pinError && <div className="pos-error">{pinError}</div>}
             </div>
             <div className="modal-foot">
               <button type="button" className="btn ghost" onClick={() => setPinModalOpen(false)}>
-                Vazgeç
+                {t("common.cancel")}
               </button>
               <button type="submit" className="btn primary" disabled={pinSubmitting}>
-                {pinSubmitting ? "Onaylanıyor..." : "Onayla"}
+                {pinSubmitting ? t("pos.confirming") : t("pos.confirm")}
               </button>
             </div>
           </form>

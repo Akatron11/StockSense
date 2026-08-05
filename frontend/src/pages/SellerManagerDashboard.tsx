@@ -43,41 +43,41 @@ export function SellerManagerDashboard() {
         setReport(reportData);
         setExpiringCount(expiring);
       })
-      .catch(() => setError("Pano verisi alınamadı."))
+      .catch(() => setError(t("reports.dashboardLoadError")))
       .finally(() => setLoading(false));
   }, [token, days]);
 
   return (
     <AppShell pageTitle={activeLabel}>
       <div className="toolbar">
-        <div className="scope">Kapsam: {report?.scope_label ?? "kendi şubesi"}</div>
+        <div className="scope">{t("reports.scope", { label: report?.scope_label ?? t("reports.defaultScope") })}</div>
         <RangeSelector value={days} onChange={setDays} />
       </div>
 
       {error && <div className="error-text">{error}</div>}
       {loading || !report ? (
-        <div className="muted-small">Yükleniyor...</div>
+        <div className="muted-small">{t("common.loading")}</div>
       ) : (
         <>
           <section className="cards c3">
             <div className="card">
-              <div className="lbl">Satış</div>
+              <div className="lbl">{t("reports.sellerSalesCard")}</div>
               <div className="page-title">{report.total_sales.toFixed(2)}</div>
             </div>
             <div className="card">
-              <div className="lbl">SKT / indirim bekleyen</div>
+              <div className="lbl">{t("reports.expiringDiscountCard")}</div>
               <div className="page-title">{expiringCount ?? "—"}</div>
             </div>
             <div className="card">
-              <div className="lbl">Layout önerisi durumu</div>
-              <div className="muted-small">Kapsam dışı (ayrı ML özelliği)</div>
+              <div className="lbl">{t("reports.layoutStatusCard")}</div>
+              <div className="muted-small">{t("reports.layoutOutOfScope")}</div>
             </div>
           </section>
 
           <section className="grid2">
             <div className="panel">
               <div className="panel-head">
-                Satış trendi <span className="hint">Net satış — son {report.days} gün</span>
+                {t("reports.salesTrend")} <span className="hint">{t("reports.netSalesLast", { days: report.days })}</span>
               </div>
               <div className="panel-body">
                 <SalesTrendChart trend={report.trend} />
@@ -85,11 +85,9 @@ export function SellerManagerDashboard() {
             </div>
 
             <div className="panel">
-              <div className="panel-head">Layout önerisi <span className="hint">co-occurrence / Apriori</span></div>
+              <div className="panel-head">{t("reports.layoutPanelTitle")} <span className="hint">{t("reports.layoutPanelHint")}</span></div>
               <div className="panel-body">
-                <div className="muted-small">
-                  Bu özellik henüz tasarlanmadı — SRS/mimaride ayrı bir madde olarak bekliyor.
-                </div>
+                <div className="muted-small">{t("reports.layoutPanelBody")}</div>
               </div>
             </div>
           </section>

@@ -35,7 +35,7 @@ export function StockManagerDashboard() {
     try {
       setItems(await listStock(token));
     } catch {
-      setLoadError("Stok listesi alınamadı.");
+      setLoadError(t("stockManager.loadError"));
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export function StockManagerDashboard() {
       setEditing(null);
       await load();
     } catch (err) {
-      setSaveError(err instanceof ApiError ? `Kaydedilemedi (${err.status}).` : "Kaydedilemedi.");
+      setSaveError(err instanceof ApiError ? t("common.saveFailedWithStatus", { status: err.status }) : t("common.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -86,31 +86,31 @@ export function StockManagerDashboard() {
 
   return (
     <AppShell pageTitle={activeLabel}>
-      <div className="scope">Kapsam: kendi şubesi</div>
+      <div className="scope">{t("stockManager.scopeDesc")}</div>
 
       <section className="cards c3">
         <div className="card">
-          <div className="lbl">Düşük stoktaki ürün</div>
+          <div className="lbl">{t("stockManager.lowStockCard")}</div>
           <div className="page-title">{lowStockCount}</div>
         </div>
         <div className="card">
-          <div className="lbl">SKT yaklaşan ürün</div>
+          <div className="lbl">{t("stockManager.expiringCard")}</div>
           <div className="page-title">{expiringCount}</div>
         </div>
         <div className="card">
-          <div className="lbl">Toplam ürün çeşidi</div>
+          <div className="lbl">{t("stockManager.totalVarietiesCard")}</div>
           <div className="page-title">{items.length}</div>
         </div>
       </section>
 
       <div className="panel">
         <div className="panel-head">
-          Şube stoğu
+          {t("stockManager.panelTitle")}
           <span className="filters">
             <input
               className="input"
               style={{ height: 34 }}
-              placeholder="Ara: ürün / SKU"
+              placeholder={t("stockManager.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -119,21 +119,21 @@ export function StockManagerDashboard() {
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
           {loading ? (
-            <div className="muted-small">Yükleniyor...</div>
+            <div className="muted-small">{t("common.loading")}</div>
           ) : (
             <>
               <div className="thead stock-row">
-                <span>Ürün</span>
-                <span>SKU</span>
-                <span>Stok</span>
-                <span>Eşik</span>
-                <span>Fiyat</span>
-                <span>Durum</span>
+                <span>{t("stockManager.colProduct")}</span>
+                <span>{t("stockManager.colSku")}</span>
+                <span>{t("stockManager.colStock")}</span>
+                <span>{t("stockManager.colThreshold")}</span>
+                <span>{t("stockManager.colPrice")}</span>
+                <span>{t("stockManager.colStatus")}</span>
                 <span />
               </div>
               {filtered.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
-                  Kayıt yok.
+                  {t("common.noRecords")}
                 </div>
               )}
               {filtered.map((item) => {
@@ -145,9 +145,9 @@ export function StockManagerDashboard() {
                     <span>{item.quantity}</span>
                     <span>{item.low_stock_threshold}</span>
                     <span>{item.effective_price.toFixed(2)}</span>
-                    <span className="pill">{low ? "düşük" : "yeterli"}</span>
+                    <span className="pill">{low ? t("stockManager.low") : t("stockManager.sufficient")}</span>
                     <button className="btn sm ghost" onClick={() => openEdit(item)}>
-                      Düzenle
+                      {t("common.edit")}
                     </button>
                   </div>
                 );
@@ -159,17 +159,17 @@ export function StockManagerDashboard() {
 
       <div className={`overlay${editing ? " open" : ""}`}>
         <div className="modal">
-          <div className="modal-head">Stok / düşük stok eşiği düzenle</div>
+          <div className="modal-head">{t("stockManager.modalTitle")}</div>
           <div className="modal-body">
             <div className="field">
-              <label>Ürün</label>
+              <label>{t("stockManager.product")}</label>
               <div className="input" style={{ display: "flex", alignItems: "center" }}>
                 {editing?.product_name}
               </div>
             </div>
             <div className="form-grid">
               <div className="field">
-                <label>Stok miktarı</label>
+                <label>{t("stockManager.quantityLabel")}</label>
                 <input
                   className="input"
                   type="number"
@@ -179,7 +179,7 @@ export function StockManagerDashboard() {
                 />
               </div>
               <div className="field">
-                <label>Düşük stok eşiği</label>
+                <label>{t("stockManager.thresholdLabel")}</label>
                 <input
                   className="input"
                   type="number"
@@ -189,17 +189,15 @@ export function StockManagerDashboard() {
                 />
               </div>
             </div>
-            <div className="hintbox">
-              Eşik ürün bazlı yapılandırılır; stok bu değerin altına düşünce ilgili role bildirim gider.
-            </div>
+            <div className="hintbox">{t("stockManager.hint")}</div>
             {saveError && <div className="error-text">{saveError}</div>}
           </div>
           <div className="modal-foot">
             <button className="btn ghost" onClick={() => setEditing(null)}>
-              Vazgeç
+              {t("common.cancel")}
             </button>
             <button className="btn primary" disabled={saving} onClick={handleSave}>
-              {saving ? "Kaydediliyor..." : "Kaydet"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>

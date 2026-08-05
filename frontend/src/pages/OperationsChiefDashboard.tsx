@@ -39,7 +39,7 @@ export function OperationsChiefDashboard() {
           }),
         );
       })
-      .catch(() => setError("Pano verisi alınamadı."))
+      .catch(() => setError(t("reports.dashboardLoadError")))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -50,20 +50,20 @@ export function OperationsChiefDashboard() {
     <AppShell pageTitle={activeLabel}>
       {error && <div className="error-text">{error}</div>}
       {loading ? (
-        <div className="muted-small">Yükleniyor...</div>
+        <div className="muted-small">{t("common.loading")}</div>
       ) : (
         <>
           <section className="cards">
             <div className="card">
-              <div className="lbl">Bugün vardiyadaki personel</div>
+              <div className="lbl">{t("reports.opsWorkingCard")}</div>
               <div className="page-title">{workingCount}</div>
             </div>
             <div className="card">
-              <div className="lbl">Bekleyen SKT / indirim bilgisi</div>
+              <div className="lbl">{t("reports.opsPendingExpiryCard")}</div>
               <div className="page-title">{expiringItems.length}</div>
             </div>
             <div className="card">
-              <div className="lbl">İzinli / off personel</div>
+              <div className="lbl">{t("reports.opsOffCard")}</div>
               <div className="page-title">{offCount}</div>
             </div>
           </section>
@@ -71,18 +71,18 @@ export function OperationsChiefDashboard() {
           <section className="grid2">
             <div className="panel">
               <div className="panel-head">
-                Bugünkü vardiya <span className="hint">Vardiya takviminden</span>
+                {t("reports.todayShiftTitle")} <span className="hint">{t("reports.fromShiftCalendar")}</span>
               </div>
               <div className="panel-body">
                 <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }}>
-                  <span>Personel</span>
-                  <span>Başlangıç</span>
-                  <span>Bitiş</span>
-                  <span>Durum</span>
+                  <span>{t("reports.colStaff")}</span>
+                  <span>{t("reports.colStart")}</span>
+                  <span>{t("reports.colEnd")}</span>
+                  <span>{t("reports.colStatus")}</span>
                 </div>
                 {shifts.length === 0 && (
                   <div className="muted-small" style={{ padding: "12px 0" }}>
-                    Bugün için vardiya kaydı yok.
+                    {t("reports.noShiftToday")}
                   </div>
                 )}
                 {shifts.map((s) => (
@@ -90,7 +90,7 @@ export function OperationsChiefDashboard() {
                     <span>{s.employee_name}</span>
                     <span>{s.start_time?.slice(0, 5) ?? "—"}</span>
                     <span>{s.end_time?.slice(0, 5) ?? "—"}</span>
-                    <span className="pill">{s.is_day_off ? "off" : "vardiyada"}</span>
+                    <span className="pill">{s.is_day_off ? t("shifts.off") : t("reports.working")}</span>
                   </div>
                 ))}
               </div>
@@ -98,23 +98,20 @@ export function OperationsChiefDashboard() {
 
             <div className="panel">
               <div className="panel-head">
-                SKT / indirim yaklaşan ürünler <span className="hint">bilgi amaçlı</span>
+                {t("reports.expiringProductsTitle")} <span className="hint">{t("reports.infoOnly")}</span>
               </div>
               <div className="panel-body">
-                <div className="hintbox">
-                  Bu liste salt-okunur — indirim/fiyat kararı Seller Manager yetkisinde (`price_override`).
-                  Operasyon Şefi raf yerleşimi için bilgi amaçlı görür.
-                </div>
+                <div className="hintbox">{t("reports.readonlyHint")}</div>
                 {expiringItems.length === 0 && (
                   <div className="muted-small" style={{ padding: "12px 0" }}>
-                    Yaklaşan SKT'li ürün yok.
+                    {t("reports.noExpiring")}
                   </div>
                 )}
                 {expiringItems.map((item) => (
                   <div className="item" key={item.product_id}>
                     <div className="txt">
                       <span>{item.product_name}</span>
-                      <span className="muted-small">SKT: {item.best_before_date}</span>
+                      <span className="muted-small">{t("reports.bbd", { date: item.best_before_date })}</span>
                     </div>
                   </div>
                 ))}

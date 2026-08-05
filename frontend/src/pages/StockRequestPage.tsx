@@ -13,7 +13,7 @@ import type { StockRequestItem } from "../types/stockRequest";
 // wireframe'de "bekliyor"/"geldi" idi ama madde 11 kararı gereği merkez depo sınırsız kaynak, onay/red
 // süreci yok — her talep anında karşılanıyor, o yüzden burada sabit "tamamlandı" gösteriliyor.
 export function StockRequestPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token, user } = useAuth();
   const activeLabel = user ? t(homeLabelForRole(user.role)) : "";
 
@@ -35,7 +35,7 @@ export function StockRequestPage() {
     try {
       setRequests(await listStockRequests(token));
     } catch {
-      setLoadError("Talep listesi alınamadı.");
+      setLoadError(t("stockRequest.loadError"));
     } finally {
       setLoading(false);
     }
@@ -53,13 +53,13 @@ export function StockRequestPage() {
     try {
       const results = await searchProducts(token, query.trim());
       if (results.length === 0) {
-        setSearchError("Ürün bulunamadı.");
+        setSearchError(t("stockRequest.productNotFound"));
         setPicked(null);
         return;
       }
       setPicked(results[0]);
     } catch {
-      setSearchError("Arama sırasında hata oluştu.");
+      setSearchError(t("stockRequest.searchError"));
     }
   }
 
@@ -67,7 +67,7 @@ export function StockRequestPage() {
     if (!token || !picked) return;
     const qty = Number(quantity);
     if (!qty || qty <= 0) {
-      setSubmitError("Geçerli bir miktar girin.");
+      setSubmitError(t("stockRequest.invalidQuantity"));
       return;
     }
     setSubmitting(true);
@@ -79,7 +79,11 @@ export function StockRequestPage() {
       setQuantity("1");
       await load();
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? `Talep oluşturulamadı (${err.status}).` : "Talep oluşturulamadı.");
+      setSubmitError(
+        err instanceof ApiError
+          ? t("stockRequest.requestFailedWithStatus", { status: err.status })
+          : t("stockRequest.requestFailed"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -87,34 +91,34 @@ export function StockRequestPage() {
 
   return (
     <AppShell pageTitle={activeLabel}>
-      <div className="scope">Şube stoğu yetersizse ürün merkez depodan getirtilir (fiziksel lojistik kapsam dışı)</div>
+      <div className="scope">{t("stockRequest.scopeDesc")}</div>
 
       <section className="grid2">
         <div className="panel">
-          <div className="panel-head">Yeni talep</div>
+          <div className="panel-head">{t("stockRequest.newRequestTitle")}</div>
           <div className="panel-body">
             <form onSubmit={handleSearch}>
               <div className="field" style={{ marginBottom: 14 }}>
-                <label>Ürün</label>
+                <label>{t("stockRequest.productLabel")}</label>
                 <input
                   className="input"
-                  placeholder="Ürün ara / SKU"
+                  placeholder={t("stockRequest.productPlaceholder")}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
               <button className="btn ghost sm" type="submit">
-                Ara
+                {t("pos.search")}
               </button>
             </form>
             {searchError && <div className="error-text">{searchError}</div>}
             {picked && (
               <div className="hintbox" style={{ marginTop: 14 }}>
-                Seçili ürün: {picked.name} ({picked.sku})
+                {t("stockRequest.selectedProduct", { name: picked.name, sku: picked.sku })}
               </div>
             )}
             <div className="field" style={{ marginTop: 14, marginBottom: 14 }}>
-              <label>Miktar</label>
+              <label>{t("stockRequest.quantity")}</label>
               <input
                 className="input"
                 type="number"
@@ -130,36 +134,36 @@ export function StockRequestPage() {
               disabled={!picked || submitting}
               onClick={handleCreateRequest}
             >
-              {submitting ? "Gönderiliyor..." : "Talep oluştur"}
+              {submitting ? t("pos.submitting") : t("stockRequest.createRequest")}
             </button>
           </div>
         </div>
 
         <div className="panel">
-          <div className="panel-head">Talepler</div>
+          <div className="panel-head">{t("stockRequest.requestsTitle")}</div>
           <div className="panel-body">
             {loadError && <div className="error-text">{loadError}</div>}
             {loading ? (
-              <div className="muted-small">Yükleniyor...</div>
+              <div className="muted-small">{t("common.loading")}</div>
             ) : (
               <>
                 <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }}>
-                  <span>Ürün</span>
-                  <span>Miktar</span>
-                  <span>Tarih</span>
-                  <span>Durum</span>
+                  <span>{t("stockRequest.colProduct")}</span>
+                  <span>{t("stockRequest.colQuantity")}</span>
+                  <span>{t("stockRequest.colDate")}</span>
+                  <span>{t("stockRequest.colStatus")}</span>
                 </div>
                 {requests.length === 0 && (
                   <div className="muted-small" style={{ padding: "12px 0" }}>
-                    Henüz talep yok.
+                    {t("stockRequest.noRequestsYet")}
                   </div>
                 )}
                 {requests.map((r) => (
                   <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }} key={r.id}>
                     <span>{r.product_name}</span>
                     <span>{r.quantity}</span>
-                    <span className="muted-small">{new Date(r.created_at).toLocaleDateString("tr-TR")}</span>
-                    <span className="pill">tamamlandı</span>
+                    <span className="muted-small">{new Date(r.created_at).toLocaleDateString(i18n.language)}</span>
+                    <span className="pill">{t("stockRequest.completed")}</span>
                   </div>
                 ))}
               </>
