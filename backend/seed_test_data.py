@@ -141,6 +141,12 @@ def main() -> None:
                 company_id=company.id, age=31, address="Test Adres 11",
                 manager_pin=pin_hash,
             ),
+            Employee(
+                first_name="Elif", last_name="SatisYoneticisi2", username="sellermgr2",
+                password_hash=pwd_hash, role="seller_manager", branch_id=branch2.id,
+                company_id=company.id, age=29, address="Test Adres 15",
+                manager_pin=pin_hash,
+            ),
             # Login'siz personel (madde 13) — vardiya takibi için, sisteme giriş yapamazlar
             # (username/password_hash NULL), hepsi tek genel "staff" rolünde (kullanıcı kararı, 2026-07-31).
             Employee(
@@ -179,6 +185,66 @@ def main() -> None:
         db.add_all(products)
         db.flush()
 
+        new_products = [
+            # Süt Ürünleri
+            Product(company_id=company.id, name="Yoğurt 500g", sku="SKU-YOGURT-500G", category="Süt Ürünleri", default_price=28.90, cost_price=19.00, best_before_date=date.today() + timedelta(days=6)),
+            Product(company_id=company.id, name="Ayran 250ml", sku="SKU-AYRAN-250ML", category="Süt Ürünleri", default_price=9.90, cost_price=6.00, best_before_date=date.today() + timedelta(days=10)),
+            Product(company_id=company.id, name="Kaşar Peyniri 400g", sku="SKU-KASAR-400G", category="Süt Ürünleri", default_price=89.90, cost_price=62.00, best_before_date=date.today() + timedelta(days=20)),
+            Product(company_id=company.id, name="Beyaz Peynir 500g", sku="SKU-BEYAZPEYNIR-500G", category="Süt Ürünleri", default_price=79.90, cost_price=55.00, best_before_date=date.today() + timedelta(days=25)),
+            Product(company_id=company.id, name="Tereyağı 250g", sku="SKU-TEREYAG-250G", category="Süt Ürünleri", default_price=69.90, cost_price=48.00, best_before_date=date.today() + timedelta(days=30)),
+            Product(company_id=company.id, name="Krema 200ml", sku="SKU-KREMA-200ML", category="Süt Ürünleri", default_price=34.90, cost_price=24.00, best_before_date=date.today() + timedelta(days=15)),
+            # Fırın
+            Product(company_id=company.id, name="Tam Buğday Ekmeği", sku="SKU-TBEKMEK-01", category="Fırın", default_price=15.90, cost_price=9.00, best_before_date=date.today() + timedelta(days=2)),
+            Product(company_id=company.id, name="Simit", sku="SKU-SIMIT-01", category="Fırın", default_price=8.50, cost_price=4.50, best_before_date=date.today() + timedelta(days=1)),
+            Product(company_id=company.id, name="Poğaça", sku="SKU-POGACA-01", category="Fırın", default_price=12.90, cost_price=7.00, best_before_date=date.today() + timedelta(days=2)),
+            Product(company_id=company.id, name="Kruvasan", sku="SKU-KRUVASAN-01", category="Fırın", default_price=22.90, cost_price=14.00, best_before_date=date.today() + timedelta(days=3)),
+            Product(company_id=company.id, name="Baget Ekmek", sku="SKU-BAGET-01", category="Fırın", default_price=18.90, cost_price=11.00, best_before_date=date.today() + timedelta(days=2)),
+            Product(company_id=company.id, name="Yufka", sku="SKU-YUFKA-01", category="Fırın", default_price=24.90, cost_price=16.00, best_before_date=date.today() + timedelta(days=7)),
+            # Temizlik
+            Product(company_id=company.id, name="Bulaşık Deterjanı 750ml", sku="SKU-BULASIK-750ML", category="Temizlik", default_price=64.90, cost_price=45.00, best_before_date=None),
+            Product(company_id=company.id, name="Çamaşır Suyu 1L", sku="SKU-CAMASIRSUYU-1L", category="Temizlik", default_price=39.90, cost_price=26.00, best_before_date=None),
+            Product(company_id=company.id, name="Yüzey Temizleyici 500ml", sku="SKU-YUZEYTEMIZ-500ML", category="Temizlik", default_price=49.90, cost_price=33.00, best_before_date=None),
+            Product(company_id=company.id, name="Tuvalet Kağıdı 8'li", sku="SKU-TUVALETKAGIDI-8", category="Temizlik", default_price=89.90, cost_price=62.00, best_before_date=None),
+            Product(company_id=company.id, name="Kağıt Havlu", sku="SKU-KAGITHAVLU-01", category="Temizlik", default_price=44.90, cost_price=30.00, best_before_date=None),
+            Product(company_id=company.id, name="Sıvı Sabun 400ml", sku="SKU-SIVISABUN-400ML", category="Temizlik", default_price=34.90, cost_price=22.00, best_before_date=None),
+            # Atıştırmalık
+            Product(company_id=company.id, name="Cips 150g", sku="SKU-CIPS-150G", category="Atıştırmalık", default_price=44.90, cost_price=29.00, best_before_date=None),
+            Product(company_id=company.id, name="Kraker 200g", sku="SKU-KRAKER-200G", category="Atıştırmalık", default_price=32.90, cost_price=21.00, best_before_date=None),
+            Product(company_id=company.id, name="Bisküvi 300g", sku="SKU-BISKUVI-300G", category="Atıştırmalık", default_price=27.90, cost_price=18.00, best_before_date=None),
+            Product(company_id=company.id, name="Çikolata 100g", sku="SKU-CIKOLATA-100G", category="Atıştırmalık", default_price=39.90, cost_price=26.00, best_before_date=None),
+            Product(company_id=company.id, name="Gofret 45g", sku="SKU-GOFRET-45G", category="Atıştırmalık", default_price=12.90, cost_price=8.00, best_before_date=None),
+            Product(company_id=company.id, name="Fıstık 200g", sku="SKU-FISTIK-200G", category="Atıştırmalık", default_price=99.90, cost_price=70.00, best_before_date=None),
+            Product(company_id=company.id, name="Kuru Üzüm 200g", sku="SKU-KURUUZUM-200G", category="Atıştırmalık", default_price=34.90, cost_price=23.00, best_before_date=None),
+            # İçecek
+            Product(company_id=company.id, name="Kola 1L", sku="SKU-KOLA-1L", category="İçecek", default_price=34.90, cost_price=22.00, best_before_date=None),
+            Product(company_id=company.id, name="Gazoz 1L", sku="SKU-GAZOZ-1L", category="İçecek", default_price=29.90, cost_price=19.00, best_before_date=None),
+            Product(company_id=company.id, name="Meyve Suyu 1L", sku="SKU-MEYVESUYU-1L", category="İçecek", default_price=44.90, cost_price=30.00, best_before_date=None),
+            Product(company_id=company.id, name="Maden Suyu 500ml", sku="SKU-MADENSUYU-500ML", category="İçecek", default_price=12.90, cost_price=7.50, best_before_date=None),
+            Product(company_id=company.id, name="Su 1.5L", sku="SKU-SU-1_5L", category="İçecek", default_price=9.90, cost_price=5.50, best_before_date=None),
+            Product(company_id=company.id, name="Buzlu Çay 500ml", sku="SKU-BUZLUCAY-500ML", category="İçecek", default_price=24.90, cost_price=16.00, best_before_date=None),
+            Product(company_id=company.id, name="Enerji İçeceği 250ml", sku="SKU-ENERJI-250ML", category="İçecek", default_price=39.90, cost_price=27.00, best_before_date=None),
+            # Şarküteri
+            Product(company_id=company.id, name="Zeytin 500g", sku="SKU-ZEYTIN-500G", category="Şarküteri", default_price=74.90, cost_price=52.00, best_before_date=date.today() + timedelta(days=60)),
+            Product(company_id=company.id, name="Salam 200g", sku="SKU-SALAM-200G", category="Şarküteri", default_price=54.90, cost_price=38.00, best_before_date=date.today() + timedelta(days=15)),
+            Product(company_id=company.id, name="Sucuk 250g", sku="SKU-SUCUK-250G", category="Şarküteri", default_price=89.90, cost_price=63.00, best_before_date=date.today() + timedelta(days=20)),
+            Product(company_id=company.id, name="Sosis 300g", sku="SKU-SOSIS-300G", category="Şarküteri", default_price=64.90, cost_price=45.00, best_before_date=date.today() + timedelta(days=15)),
+            Product(company_id=company.id, name="Lor Peyniri 250g", sku="SKU-LORPEYNIR-250G", category="Şarküteri", default_price=49.90, cost_price=34.00, best_before_date=date.today() + timedelta(days=12)),
+            Product(company_id=company.id, name="Tulum Peyniri 300g", sku="SKU-TULUMPEYNIR-300G", category="Şarküteri", default_price=109.90, cost_price=78.00, best_before_date=date.today() + timedelta(days=30)),
+            Product(company_id=company.id, name="Pastırma 150g", sku="SKU-PASTIRMA-150G", category="Şarküteri", default_price=129.90, cost_price=92.00, best_before_date=date.today() + timedelta(days=25)),
+            # Kahvaltılık
+            Product(company_id=company.id, name="Reçel 350g", sku="SKU-RECEL-350G", category="Kahvaltılık", default_price=44.90, cost_price=29.00, best_before_date=None),
+            Product(company_id=company.id, name="Bal 450g", sku="SKU-BAL-450G", category="Kahvaltılık", default_price=149.90, cost_price=105.00, best_before_date=None),
+            Product(company_id=company.id, name="Tahin 300g", sku="SKU-TAHIN-300G", category="Kahvaltılık", default_price=79.90, cost_price=55.00, best_before_date=None),
+            Product(company_id=company.id, name="Pekmez 400g", sku="SKU-PEKMEZ-400G", category="Kahvaltılık", default_price=69.90, cost_price=47.00, best_before_date=None),
+            Product(company_id=company.id, name="Çay 500g", sku="SKU-CAY-500G", category="Kahvaltılık", default_price=89.90, cost_price=60.00, best_before_date=None),
+            Product(company_id=company.id, name="Şeker 1kg", sku="SKU-SEKER-1KG", category="Kahvaltılık", default_price=34.90, cost_price=23.00, best_before_date=None),
+            Product(company_id=company.id, name="Makarna 500g", sku="SKU-MAKARNA-500G", category="Kahvaltılık", default_price=19.90, cost_price=12.00, best_before_date=None),
+            Product(company_id=company.id, name="Salça 700g", sku="SKU-SALCA-700G", category="Kahvaltılık", default_price=54.90, cost_price=36.00, best_before_date=None),
+        ]
+        products.extend(new_products)
+        db.add_all(new_products)
+        db.flush()
+
         stock_rows = [
             # Süt — düşük stok tetiklesin (quantity < threshold)
             Stock(product_id=products[0].id, branch_id=branch1.id, quantity=3, low_stock_threshold=10),
@@ -192,6 +258,31 @@ def main() -> None:
             # Beşiktaş şubesinde sadece ekmek var (izolasyon testi için)
             Stock(product_id=products[1].id, branch_id=branch2.id, quantity=20, low_stock_threshold=10),
         ]
+
+        products_by_sku = {p.sku: p for p in products}
+        branch1_stocked_ids = {row.product_id for row in stock_rows if row.branch_id == branch1.id}
+        for product in products:
+            if product.id not in branch1_stocked_ids:
+                stock_rows.append(
+                    Stock(product_id=product.id, branch_id=branch1.id, quantity=30, low_stock_threshold=10)
+                )
+
+        branch2_skus = {
+            "SKU-BREAD-01", "SKU-MILK-1L", "SKU-BEYAZPEYNIR-500G", "SKU-ZEYTIN-500G",
+            "SKU-MAKARNA-500G", "SKU-SALCA-700G",
+            "SKU-CIPS-150G", "SKU-KRAKER-200G", "SKU-BISKUVI-300G", "SKU-CIKOLATA-100G",
+            "SKU-GOFRET-45G", "SKU-FISTIK-200G", "SKU-KURUUZUM-200G",
+            "SKU-KOLA-1L", "SKU-GAZOZ-1L", "SKU-MEYVESUYU-1L", "SKU-MADENSUYU-500ML",
+            "SKU-SU-1_5L", "SKU-BUZLUCAY-500ML", "SKU-ENERJI-250ML",
+        }
+        branch2_stocked_ids = {row.product_id for row in stock_rows if row.branch_id == branch2.id}
+        for sku in branch2_skus:
+            product = products_by_sku[sku]
+            if product.id not in branch2_stocked_ids:
+                stock_rows.append(
+                    Stock(product_id=product.id, branch_id=branch2.id, quantity=25, low_stock_threshold=8)
+                )
+
         db.add_all(stock_rows)
 
         cashier1, manav, kasap, raf_duzenleyici = employees[0], employees[-3], employees[-2], employees[-1]
