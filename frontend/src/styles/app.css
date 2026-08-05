@@ -23,7 +23,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
       display:flex;flex-direction:column;padding:14px 12px;}
 .logo{height:40px;border:1px dashed var(--line);border-radius:var(--radius);
       display:flex;align-items:center;justify-content:center;color:var(--muted);
-      font-size:12px;letter-spacing:.12em;margin-bottom:6px;}
+      font-size:12px;letter-spacing:.12em;margin-bottom:6px;overflow:hidden;}
+.logo-img{width:100%;height:100%;object-fit:contain;}
 .rail-role{font-size:11px;color:var(--muted);padding:8px 6px 12px;letter-spacing:.04em;}
 .nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
 .nav li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);
@@ -47,9 +48,12 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
         display:flex;align-items:center;justify-content:space-between;padding:0 22px;}
 .crumb{font-size:15px;}
 .topbar-right{display:flex;align-items:center;gap:16px;}
-.bell{position:relative;width:22px;height:22px;border:1px solid var(--line);border-radius:5px;cursor:pointer;}
-.bell .badge{position:absolute;top:-6px;right:-6px;min-width:15px;height:15px;border-radius:8px;
-      background:var(--bar-dark);border:1px solid var(--line);}
+.bell{position:relative;width:26px;height:26px;border:1px solid var(--line);border-radius:5px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.bell:hover{background:var(--rail);}
+.bell.has-notifications{color:#b3261e;border-color:#b3261e;}
+.bell .badge{position:absolute;top:-7px;right:-7px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;
+      background:#b3261e;border:1px solid var(--panel);color:#fff;font-size:10px;line-height:14px;text-align:center;}
 .brand-slot{font-size:10px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;
       padding:3px 7px;letter-spacing:.05em;}
 

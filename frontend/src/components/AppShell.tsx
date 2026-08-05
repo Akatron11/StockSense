@@ -6,7 +6,9 @@ import { roleLabel } from "../auth/roleLabels";
 import { navForRole } from "./navConfig";
 import { Avatar } from "./Avatar";
 import { getLoginBranding } from "../api/auth";
+import { getNotifications } from "../api/notifications";
 import { applyBrandColor } from "../theme/brandColor";
+import type { NotificationsOut } from "../types/notification";
 
 interface AppShellProps {
   pageTitle: string;
@@ -20,19 +22,35 @@ interface AppShellProps {
 export function AppShell({ pageTitle, children }: AppShellProps) {
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const [bellOpen, setBellOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<NotificationsOut | null>(null);
+  const [notifError, setNotifError] = useState<string | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  const subdomain = window.location.hostname.split(".")[0];
+
   useEffect(() => {
-    // Şirketin ana rengi — /api/auth/branding host header'dan (subdomain) çözer, auth gerektirmez,
-    // login öncesiyle aynı endpoint. admin subdomain'de primary_color null döner, tema değişmez.
+    // Şirketin markası — /api/auth/branding host header'dan (subdomain) çözer, auth gerektirmez,
+    // login öncesiyle aynı endpoint. admin subdomain'de primary_color/logo_url null döner, değişmez.
     getLoginBranding()
-      .then((b) => applyBrandColor(b.primary_color))
+      .then((b) => {
+        applyBrandColor(b.primary_color);
+        setLogoUrl(b.logo_url);
+      })
       .catch(() => applyBrandColor(null));
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    setNotifError(null);
+    getNotifications(token)
+      .then(setNotifications)
+      .catch(() => setNotifError(t("chrome.notificationsLoadError")));
+  }, [token, bellOpen]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -49,11 +67,14 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
 
   const roleText = user ? roleLabel(t, user.role) : "";
   const navGroups = user ? navForRole(user.role) : [];
+  const notifCount = notifications ? notifications.low_stock.length + notifications.expiring.length : 0;
 
   return (
     <div className="app">
       <aside className="rail">
-        <div className="logo">LOGO</div>
+        <div className="logo">
+          {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-img" /> : "LOGO"}
+        </div>
         <div className="rail-role">{roleText}</div>
 
         {navGroups.map((group, groupIndex) => (
@@ -97,18 +118,38 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
         <header className="topbar">
           <div className="crumb">{pageTitle}</div>
           <div className="topbar-right">
-            <span className="brand-slot">{t("chrome.brandSlot")}</span>
+            <span className="brand-slot">{subdomain}</span>
 
             <div className={`bellwrap${bellOpen ? " open" : ""}`} ref={bellRef}>
-              <div className="bell" onClick={() => setBellOpen((v) => !v)}>
-                <span className="badge" />
+              <div className={`bell${notifCount > 0 ? " has-notifications" : ""}`} onClick={() => setBellOpen((v) => !v)}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {notifCount > 0 && <span className="badge">{notifCount > 9 ? "9+" : notifCount}</span>}
               </div>
               <div className="bell-pop">
                 <div className="bp-head">{t("chrome.notifications")}</div>
-                <div className="bell-item">
-                  <span className="tag">{t("chrome.system")}</span>
-                  <span className="muted-small">{t("chrome.notificationsPlaceholder")}</span>
-                </div>
+                {notifError && <div className="bell-item muted-small">{notifError}</div>}
+                {!notifError && notifCount === 0 && (
+                  <div className="bell-item muted-small">{t("chrome.noNotifications")}</div>
+                )}
+                {notifications?.low_stock.map((item) => (
+                  <div className="bell-item" key={`low-${item.product_id}-${item.branch_id}`}>
+                    <span className="tag">{t("chrome.lowStockSection")}</span>
+                    <span className="muted-small">
+                      {t("chrome.lowStockItem", { name: item.product_name, quantity: item.quantity, threshold: item.threshold })}
+                    </span>
+                  </div>
+                ))}
+                {notifications?.expiring.map((item) => (
+                  <div className="bell-item" key={`exp-${item.product_id}-${item.branch_id}`}>
+                    <span className="tag">{t("chrome.expiringSection")}</span>
+                    <span className="muted-small">
+                      {t("chrome.expiringItem", { name: item.product_name, date: item.best_before_date })}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 

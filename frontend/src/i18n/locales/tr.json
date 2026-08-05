@@ -9,12 +9,17 @@
     "errorGeneric": "Giriş yapılamadı, lütfen tekrar deneyin."
   },
   "chrome": {
-    "brandSlot": "marka alanı (subdomain)",
     "notifications": "Bildirimler",
-    "notificationsPlaceholder": "Bildirimler henüz bağlanmadı",
+    "noNotifications": "Bekleyen bildirim yok",
+    "notificationsLoadError": "Bildirimler alınamadı.",
+    "lowStockSection": "Düşük stok",
+    "expiringSection": "SKT yaklaşan",
+    "lowStockItem": "{{name}} — {{quantity}}/{{threshold}}",
+    "expiringItem": "{{name}} — SKT {{date}}",
     "system": "Sistem",
     "language": "Dil / Language",
-    "logout": "Çıkış"
+    "logout": "Çıkış",
+    "logoAlt": "Logo"
   },
   "nav": {
     "home": "Ana sayfa",

@@ -7,6 +7,8 @@ import { Avatar } from "../components/Avatar";
 import { listProducts, searchProducts } from "../api/products";
 import { createSale, getSale, listRecentSales } from "../api/sales";
 import { initiateReturn, completeReturn } from "../api/returns";
+import { getLoginBranding } from "../api/auth";
+import { applyBrandColor } from "../theme/brandColor";
 import { ApiError } from "../api/client";
 import type { ProductRead } from "../types/product";
 import type { SaleDetail, SaleListItem } from "../types/sale";
@@ -36,6 +38,7 @@ export function CashierPos() {
 
   const [catalog, setCatalog] = useState<ProductRead[]>([]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
@@ -57,6 +60,17 @@ export function CashierPos() {
   const [returnPin, setReturnPin] = useState("");
   const [pinSubmitting, setPinSubmitting] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // AppShell hiç mount olmadığı için (kasiyer doğrudan /pos'a yönlenir) marka rengi/logo burada
+    // ayrıca çekilip uygulanıyor — aksi halde POS ekranında hiçbir zaman marka teması görünmezdi.
+    getLoginBranding()
+      .then((b) => {
+        applyBrandColor(b.primary_color);
+        setLogoUrl(b.logo_url);
+      })
+      .catch(() => applyBrandColor(null));
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -228,7 +242,9 @@ export function CashierPos() {
     <div>
       <header className="posbar">
         <div className="posbar-left">
-          <span className="logo-sm">LOGO</span>
+          <span className="logo-sm">
+            {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-sm-img" /> : "LOGO"}
+          </span>
           <span className="pos-role">{roleText} · POS</span>
         </div>
         <div className={`usermenu${userMenuOpen ? " open" : ""}`}>

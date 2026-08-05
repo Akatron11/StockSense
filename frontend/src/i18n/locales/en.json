@@ -9,12 +9,17 @@
     "errorGeneric": "Could not log in, please try again."
   },
   "chrome": {
-    "brandSlot": "brand area (subdomain)",
     "notifications": "Notifications",
-    "notificationsPlaceholder": "Notifications not wired up yet",
+    "noNotifications": "No pending notifications",
+    "notificationsLoadError": "Could not load notifications.",
+    "lowStockSection": "Low stock",
+    "expiringSection": "Nearing expiry",
+    "lowStockItem": "{{name}} — {{quantity}}/{{threshold}}",
+    "expiringItem": "{{name}} — best before {{date}}",
     "system": "System",
     "language": "Dil / Language",
-    "logout": "Log out"
+    "logout": "Log out",
+    "logoAlt": "Logo"
   },
   "nav": {
     "home": "Home",
