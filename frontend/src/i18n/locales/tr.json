@@ -226,6 +226,21 @@
     "noRequestsYet": "Henüz talep yok.",
     "completed": "tamamlandı"
   },
+  "layoutSuggestion": {
+    "scopeDesc": "Kapsam: kendi şubesi · yöntem satış hacmine göre otomatik (co-occurrence / Apriori)",
+    "loadError": "Öneri listesi alınamadı.",
+    "methodCoOccurrence": "Yöntem: co-occurrence sayımı",
+    "methodApriori": "Yöntem: Apriori (association-rule mining)",
+    "salesCount": "{{count}} satış üzerinden hesaplandı",
+    "colPair": "Ürün çifti",
+    "colScore": "Güç",
+    "colAction": "Aksiyon",
+    "noSuggestionsYet": "Henüz yeterli satış verisi yok.",
+    "apply": "Uygula",
+    "applied": "Uygulandı",
+    "applyFailed": "Uygulanamadı.",
+    "applyFailedWithStatus": "Uygulanamadı ({{status}})."
+  },
   "stockManager": {
     "scopeDesc": "Kapsam: kendi şubesi",
     "lowStockCard": "Düşük stoktaki ürün",

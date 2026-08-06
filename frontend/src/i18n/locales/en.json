@@ -226,6 +226,21 @@
     "noRequestsYet": "No requests yet.",
     "completed": "completed"
   },
+  "layoutSuggestion": {
+    "scopeDesc": "Scope: your branch · method auto-selected by sales volume (co-occurrence / Apriori)",
+    "loadError": "Could not load the suggestion list.",
+    "methodCoOccurrence": "Method: co-occurrence counting",
+    "methodApriori": "Method: Apriori (association-rule mining)",
+    "salesCount": "Computed from {{count}} sales",
+    "colPair": "Product pair",
+    "colScore": "Strength",
+    "colAction": "Action",
+    "noSuggestionsYet": "Not enough sales data yet.",
+    "apply": "Apply",
+    "applied": "Applied",
+    "applyFailed": "Could not apply.",
+    "applyFailedWithStatus": "Could not apply ({{status}})."
+  },
   "stockManager": {
     "scopeDesc": "Scope: own branch",
     "lowStockCard": "Low-stock products",
