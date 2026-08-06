@@ -229,8 +229,7 @@
   "layoutSuggestion": {
     "scopeDesc": "Kapsam: kendi şubesi · yöntem satış hacmine göre otomatik (co-occurrence / Apriori)",
     "loadError": "Öneri listesi alınamadı.",
-    "methodCoOccurrence": "Yöntem: co-occurrence sayımı",
-    "methodApriori": "Yöntem: Apriori (association-rule mining)",
+    "computedFromSales": "Satış geçmişinize göre hesaplandı",
     "salesCount": "{{total}} satış üzerinden hesaplandı",
     "colPair": "Ürün çifti",
     "colScore": "Güç",

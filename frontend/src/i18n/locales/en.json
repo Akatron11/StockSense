@@ -229,8 +229,7 @@
   "layoutSuggestion": {
     "scopeDesc": "Scope: your branch · method auto-selected by sales volume (co-occurrence / Apriori)",
     "loadError": "Could not load the suggestion list.",
-    "methodCoOccurrence": "Method: co-occurrence counting",
-    "methodApriori": "Method: Apriori (association-rule mining)",
+    "computedFromSales": "Computed from your sales history",
     "salesCount": "Computed from {{total}} sales",
     "colPair": "Product pair",
     "colScore": "Strength",

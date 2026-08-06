@@ -54,8 +54,10 @@ def compute_recommendation(db: Session, branch_id: int) -> dict:
         suggestions = _compute_apriori(basket_list, product_names)
         if not suggestions:
             # Apriori min_support eşiğini karşılayan çift yoksa co_occurrence'a düş — Seller
-            # Manager'ı elinde hiçbir öneri olmadan bırakmamak için (method alanı yine "apriori"
-            # kalır, çünkü hacme göre o yöntem seçildi — sadece çıktı üretme stratejisi düşüyor).
+            # Manager'ı elinde hiçbir öneri olmadan bırakmamak için. method alanı da
+            # "co_occurrence" olarak güncellenir, çünkü döndürülen skorlar artık gerçekte o
+            # yöntemle hesaplanmış oluyor (hacme göre "apriori" seçilmiş olması önemli değil).
+            method = "co_occurrence"
             suggestions = _compute_co_occurrence(basket_list, branch_sales_count, product_names)
 
     return {

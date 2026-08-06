@@ -65,13 +65,7 @@ export function LayoutSuggestionPage() {
 
       <section className="panel">
         <div className="panel-head">
-          {data
-            ? t(
-                data.method === "apriori"
-                  ? "layoutSuggestion.methodApriori"
-                  : "layoutSuggestion.methodCoOccurrence",
-              )
-            : ""}
+          {data ? t("layoutSuggestion.computedFromSales") : ""}
           {data && (
             <span className="hint">{t("layoutSuggestion.salesCount", { total: data.branch_sales_count })}</span>
           )}
