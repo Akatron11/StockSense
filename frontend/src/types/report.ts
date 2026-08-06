@@ -18,6 +18,11 @@ export interface BreakdownItem {
   profit_margin_pct: number | null;
 }
 
+export interface NeverSoldItem {
+  product_id: number;
+  product_name: string;
+}
+
 export interface SalesReportOut {
   scope: "branch" | "region" | "company";
   scope_label: string;
@@ -32,4 +37,6 @@ export interface SalesReportOut {
   trend: SalesTrendPoint[];
   top_products: TopProductItem[];
   breakdown: BreakdownItem[];
+  least_selling: TopProductItem[];
+  never_sold: NeverSoldItem[];
 }
