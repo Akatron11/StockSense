@@ -73,7 +73,7 @@ export function LayoutSuggestionPage() {
               )
             : ""}
           {data && (
-            <span className="hint">{t("layoutSuggestion.salesCount", { count: data.branch_sales_count })}</span>
+            <span className="hint">{t("layoutSuggestion.salesCount", { total: data.branch_sales_count })}</span>
           )}
         </div>
         <div className="panel-body">

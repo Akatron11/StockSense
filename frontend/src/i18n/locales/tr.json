@@ -231,7 +231,7 @@
     "loadError": "Öneri listesi alınamadı.",
     "methodCoOccurrence": "Yöntem: co-occurrence sayımı",
     "methodApriori": "Yöntem: Apriori (association-rule mining)",
-    "salesCount": "{{count}} satış üzerinden hesaplandı",
+    "salesCount": "{{total}} satış üzerinden hesaplandı",
     "colPair": "Ürün çifti",
     "colScore": "Güç",
     "colAction": "Aksiyon",

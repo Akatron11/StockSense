@@ -7,4 +7,4 @@ python-dotenv
 bcrypt
 python-jose[cryptography]
 pandas
-mlxtend
+mlxtend>=0.25

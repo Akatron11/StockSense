@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -15,7 +16,7 @@ class LayoutSuggestionItem(BaseModel):
 
 
 class LayoutSuggestionOut(BaseModel):
-    method: str  # "co_occurrence" | "apriori"
+    method: Literal["co_occurrence", "apriori"]
     branch_sales_count: int
     suggestions: list[LayoutSuggestionItem]
 

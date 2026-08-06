@@ -13,6 +13,7 @@ from app.models import (
     CompanyBranding,
     CompanyFeature,
     Employee,
+    LayoutRecommendationApplication,
     Product,
     Region,
     Return,
@@ -43,6 +44,9 @@ def main() -> None:
             db.query(Return).filter(Return.id.in_(return_ids)).delete(synchronize_session=False)
             db.query(SaleItem).filter(SaleItem.sale_id.in_(sale_ids)).delete(synchronize_session=False)
             db.query(Sale).filter(Sale.id.in_(sale_ids)).delete(synchronize_session=False)
+            db.query(LayoutRecommendationApplication).filter(
+                LayoutRecommendationApplication.branch_id.in_(branch_ids)
+            ).delete(synchronize_session=False)
             db.query(StockRequest).filter(StockRequest.branch_id.in_(branch_ids)).delete(synchronize_session=False)
             db.query(Shift).filter(
                 Shift.employee_id.in_(db.query(Employee.id).filter(Employee.company_id == existing.id))

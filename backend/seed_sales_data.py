@@ -10,7 +10,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 from app.database import SessionLocal
-from app.models import Branch, Company, Employee, Product, Sale, SaleItem
+from app.models import Branch, Company, Employee, Product, Return, ReturnItem, Sale, SaleItem
 
 SUBDOMAIN = "testco"
 
@@ -86,6 +86,9 @@ def main() -> None:
         cashier2 = db.query(Employee).filter(Employee.username == "cashier2").one()
 
         existing_sale_ids = db.query(Sale.id).filter(Sale.branch_id.in_([branch1.id, branch2.id]))
+        existing_return_ids = db.query(Return.id).filter(Return.sale_id.in_(existing_sale_ids))
+        db.query(ReturnItem).filter(ReturnItem.return_id.in_(existing_return_ids)).delete(synchronize_session=False)
+        db.query(Return).filter(Return.id.in_(existing_return_ids)).delete(synchronize_session=False)
         db.query(SaleItem).filter(SaleItem.sale_id.in_(existing_sale_ids)).delete(synchronize_session=False)
         db.query(Sale).filter(Sale.id.in_(existing_sale_ids)).delete(synchronize_session=False)
         db.commit()

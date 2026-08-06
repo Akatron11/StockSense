@@ -7,8 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import get_current_claims
-from ..models import LayoutRecommendationApplication
+from ..deps import get_current_claims, require_role
+from ..models import LayoutRecommendationApplication, Product
 from ..schemas.layout_suggestion import (
     LayoutSuggestionApplyIn,
     LayoutSuggestionApplyOut,
@@ -26,8 +26,7 @@ def _normalize_pair(product_a_id: int, product_b_id: int) -> tuple[int, int]:
 
 @router.get("/layout-suggestion", response_model=LayoutSuggestionOut)
 def get_layout_suggestion(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
-    if claims["role"] != "seller_manager":
-        raise HTTPException(status_code=403, detail="Bu rapora erişim yetkiniz yok")
+    require_role(claims, "seller_manager")
 
     branch_id = claims["branch_id"]
     result = compute_recommendation(db, branch_id)
@@ -71,8 +70,24 @@ def apply_layout_suggestion(
     claims: dict = Depends(get_current_claims),
     db: Session = Depends(get_db),
 ):
-    if claims["role"] != "seller_manager":
-        raise HTTPException(status_code=403, detail="Bu işlem için yetkili değilsiniz")
+    require_role(claims, "seller_manager")
+
+    if payload.product_a_id == payload.product_b_id:
+        raise HTTPException(status_code=422, detail="Bir ürün kendisiyle eşleştirilemez")
+
+    company_id = claims["company_id"]
+    products = {
+        product.id: product
+        for product in db.scalars(
+            select(Product).where(
+                Product.id.in_([payload.product_a_id, payload.product_b_id]),
+                Product.company_id == company_id,
+            )
+        )
+    }
+    missing = [pid for pid in (payload.product_a_id, payload.product_b_id) if pid not in products]
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Ürün bulunamadı: {missing}")
 
     branch_id = claims["branch_id"]
     a_id, b_id = _normalize_pair(payload.product_a_id, payload.product_b_id)

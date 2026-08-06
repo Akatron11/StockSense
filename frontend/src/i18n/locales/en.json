@@ -231,7 +231,7 @@
     "loadError": "Could not load the suggestion list.",
     "methodCoOccurrence": "Method: co-occurrence counting",
     "methodApriori": "Method: Apriori (association-rule mining)",
-    "salesCount": "Computed from {{count}} sales",
+    "salesCount": "Computed from {{total}} sales",
     "colPair": "Product pair",
     "colScore": "Strength",
     "colAction": "Action",
