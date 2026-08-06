@@ -40,6 +40,35 @@ kapsanıyor (çift/skor listesi + gerekçe). **SHOULD** (floor-plan/zone görsel
   Apriori'de confidence/lift'ten türetilen bir oran — ikisi de `score` alanında 0-1 arası ondalık
   olarak dönüyor (var olan `stocksense-api-tr.md` konvansiyonu, bkz. API bölümü).
 
+### Eşik değeri (150) — kalibrasyon kanıtı (2026-08-06)
+
+İlk seçilen `LAYOUT_METHOD_THRESHOLD_SALES = 150` değeri implementasyon sırasında sadece iki uç
+nokta (40 ve 400 satış) ile test edilmişti — "150 arada bir yerde" demekten öteye geçmiyordu.
+Kullanıcı isteğiyle gerçek bir kalibrasyon deneyi yapıldı: `_compute_co_occurrence`/`_compute_apriori`
+fonksiyonları, `seed_sales_data.py` ile aynı üretim mantığıyla (40% desenli çift olasılığı, 30% ekstra
+ürün olasılığı, 50 ürünlük katalog, 4 gerçek desenli çift) 9 farklı hacimde (50, 100, 150, 200, 300,
+400, 500, 800, 1500 satış) DB'ye dokunmadan, saf Python ile test edildi.
+
+**Bulgular:**
+- **50 satışta:** Apriori güvenilmez — 2 gürültü çifti, gerçek desenli çiftlerle birlikte skor
+  `1.0000` (tam güven) alıyor, ayırt edilemiyor. Beklenenin tersine, **co-occurrence** bu hacimde
+  zaten temizdi (top-5'in 4'ü gerçek çift).
+- **100 satışta:** Apriori toparlanmaya başlıyor (top-4 gerçek) ama çıktı listesinde hâlâ gürültü var.
+- **150 satışta ve üzerinde:** Apriori tamamen temiz — döndürdüğü tüm sonuçlar (tipik olarak sadece 4
+  tane) gerçek desenli çiftler, hiç gürültü yok. Bu davranış 1500 satışa kadar tutarlı kaldı.
+- **Beklenmeyen bulgu:** Mimari madde 7'nin "co-occurrence yüksek hacimde gürültülü hale gelir"
+  varsayımı bu sentetik veri setinde doğrulanamadı — co-occurrence tüm hacimlerde tutarlı kaldı
+  (50 ürünlük geniş katalogda rastgele gürültü hiçbir çifte yeterince birikmiyor). Asıl risk ters
+  yöndeydi: **Apriori düşük hacimde (≲75-100 satış) sahte yüksek-güven sonuçlar üretiyor.**
+
+**Sonuç (kullanıcı kararı, 2026-08-06):** `LAYOUT_METHOD_THRESHOLD_SALES = 150` **değiştirilmeden
+korundu** — veri, Apriori'nin güvenilir hale geldiği noktanın (~100-150 satış) altında rahat bir pay
+bıraktığını gösteriyor, yani 150 keyfi değil, savunulabilir bir eşik.
+
+**Bilinen sınırlama:** Sentetik gürültü üretici, gürültü ürünlerini 50 ürüne düz rastgele dağıtıyor —
+gerçek bir marketteki çarpık popülerlik dağılımını (bazı ürünlerin zaten çok satılıp tesadüfen sık
+birlikte çıkması) modellemiyor. Gerçek/canlı satış verisiyle bu eşik ileride tekrar gözden geçirilebilir.
+
 ## Veri modeli — yeni tablo
 
 `layout_recommendation_applications` — Seller Manager'ın bir öneriyi "kabul ettim/uyguladım" olarak
