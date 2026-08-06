@@ -171,7 +171,12 @@ def get_sales_report(
         never_sold_rows = db.execute(
             select(Product.id, Product.name)
             .join(Stock, Stock.product_id == Product.id)
-            .where(Stock.branch_id.in_(branch_ids), Product.id.notin_(sold_product_ids))
+            .where(
+                Stock.branch_id.in_(branch_ids),
+                Product.id.notin_(sold_product_ids),
+                Product.is_active.is_(True),
+                Product.company_id == claims["company_id"],
+            )
             .distinct()
         ).all()
         never_sold = [NeverSoldItem(product_id=pid, product_name=name) for pid, name in never_sold_rows]

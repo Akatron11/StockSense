@@ -42,7 +42,7 @@ export function ReportsDetailPage() {
         <div className="muted-small">{t("common.loading")}</div>
       ) : (
         <>
-          <section className="cards">
+          <section className={`cards${report.profit_margin_pct === null ? " c3" : ""}`}>
             <div className="card">
               <div className="lbl">{t("reports.totalSales")}</div>
               <div className="page-title">{report.total_sales.toFixed(2)}</div>
