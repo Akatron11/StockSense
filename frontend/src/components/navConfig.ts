@@ -67,7 +67,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
         { label: "nav.home", path: "/" },
         { label: "nav.priceManagement", path: "/price" },
         { label: "nav.salesReports" },
-        { label: "nav.layoutSuggestion" },
+        { label: "nav.layoutSuggestion", path: "/layout" },
       ],
     },
   ],

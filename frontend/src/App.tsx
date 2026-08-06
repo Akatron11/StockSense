@@ -7,6 +7,7 @@ import { CashierPos } from "./pages/CashierPos";
 import { ProductCatalogPage } from "./pages/ProductCatalogPage";
 import { PriceManagementPage } from "./pages/PriceManagementPage";
 import { StockRequestPage } from "./pages/StockRequestPage";
+import { LayoutSuggestionPage } from "./pages/LayoutSuggestionPage";
 import { EmployeeManagementPage } from "./pages/EmployeeManagementPage";
 import { StaffRegistrationPage } from "./pages/StaffRegistrationPage";
 import { ShiftCalendarPage } from "./pages/ShiftCalendarPage";
@@ -47,6 +48,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <StockRequestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/layout"
+            element={
+              <ProtectedRoute>
+                <LayoutSuggestionPage />
               </ProtectedRoute>
             }
           />
