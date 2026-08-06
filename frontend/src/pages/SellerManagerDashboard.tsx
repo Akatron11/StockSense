@@ -12,8 +12,7 @@ import type { SalesReportOut } from "../types/report";
 // backend/app/routers/notifications.py::EXPIRING_WITHIN_DAYS ile aynı eşik.
 const EXPIRING_WITHIN_DAYS = 7;
 
-// prototype/seller-manager-dashboard.html'in React karşılığı. "Layout önerisi" (co-occurrence/Apriori)
-// hiç tasarlanmamış ayrı bir ML özelliği — kapsam dışı bırakıldı, panel yer tutucu olarak kalıyor.
+// prototype/seller-manager-dashboard.html'in React karşılığı.
 export function SellerManagerDashboard() {
   const { t } = useTranslation();
   const { token, user } = useAuth();
@@ -59,7 +58,7 @@ export function SellerManagerDashboard() {
         <div className="muted-small">{t("common.loading")}</div>
       ) : (
         <>
-          <section className="cards c3">
+          <section className="cards c2">
             <div className="card">
               <div className="lbl">{t("reports.sellerSalesCard")}</div>
               <div className="page-title">{report.total_sales.toFixed(2)}</div>
@@ -68,27 +67,14 @@ export function SellerManagerDashboard() {
               <div className="lbl">{t("reports.expiringDiscountCard")}</div>
               <div className="page-title">{expiringCount ?? "—"}</div>
             </div>
-            <div className="card">
-              <div className="lbl">{t("reports.layoutStatusCard")}</div>
-              <div className="muted-small">{t("reports.layoutOutOfScope")}</div>
-            </div>
           </section>
 
-          <section className="grid2">
-            <div className="panel">
-              <div className="panel-head">
-                {t("reports.salesTrend")} <span className="hint">{t("reports.netSalesLast", { days: report.days })}</span>
-              </div>
-              <div className="panel-body">
-                <SalesTrendChart trend={report.trend} />
-              </div>
+          <section className="panel">
+            <div className="panel-head">
+              {t("reports.salesTrend")} <span className="hint">{t("reports.netSalesLast", { days: report.days })}</span>
             </div>
-
-            <div className="panel">
-              <div className="panel-head">{t("reports.layoutPanelTitle")} <span className="hint">{t("reports.layoutPanelHint")}</span></div>
-              <div className="panel-body">
-                <div className="muted-small">{t("reports.layoutPanelBody")}</div>
-              </div>
+            <div className="panel-body">
+              <SalesTrendChart trend={report.trend} />
             </div>
           </section>
         </>
