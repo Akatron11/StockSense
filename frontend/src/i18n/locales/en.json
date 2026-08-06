@@ -227,7 +227,7 @@
     "completed": "completed"
   },
   "layoutSuggestion": {
-    "scopeDesc": "Scope: your branch · method auto-selected by sales volume (co-occurrence / Apriori)",
+    "scopeDesc": "Scope: your branch · suggestions update automatically from your sales history",
     "loadError": "Could not load the suggestion list.",
     "computedFromSales": "Computed from your sales history",
     "salesCount": "Computed from {{total}} sales",

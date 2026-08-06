@@ -227,7 +227,7 @@
     "completed": "tamamlandı"
   },
   "layoutSuggestion": {
-    "scopeDesc": "Kapsam: kendi şubesi · yöntem satış hacmine göre otomatik (co-occurrence / Apriori)",
+    "scopeDesc": "Kapsam: kendi şubesi · öneriler satış geçmişinize göre otomatik güncellenir",
     "loadError": "Öneri listesi alınamadı.",
     "computedFromSales": "Satış geçmişinize göre hesaplandı",
     "salesCount": "{{total}} satış üzerinden hesaplandı",
