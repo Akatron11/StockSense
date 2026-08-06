@@ -7,6 +7,7 @@ import { listStock, updateStock } from "../api/stock";
 import { ApiError } from "../api/client";
 import type { ProductRead } from "../types/product";
 import type { StockItem } from "../types/stock";
+import { formatCurrency } from "../utils/currency";
 
 interface PriceRow {
   product_id: number;
@@ -148,9 +149,9 @@ export function PriceManagementPage() {
               {filtered.map((row) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }} key={row.product_id}>
                   <span>{row.name}</span>
-                  <span>{row.default_price.toFixed(2)}</span>
-                  <span>{row.price_override !== null ? row.price_override.toFixed(2) : <span className="pill">{t("common.none")}</span>}</span>
-                  <span>{row.effective_price.toFixed(2)}</span>
+                  <span>{formatCurrency(row.default_price)}</span>
+                  <span>{row.price_override !== null ? formatCurrency(row.price_override) : <span className="pill">{t("common.none")}</span>}</span>
+                  <span>{formatCurrency(row.effective_price)}</span>
                   <button className="btn sm ghost" onClick={() => openEdit(row)}>
                     {t("common.edit")}
                   </button>
@@ -171,7 +172,7 @@ export function PriceManagementPage() {
             </div>
             <div className="kv">
               <span>{t("price.defaultPrice")}</span>
-              <span>{editing?.default_price.toFixed(2)}</span>
+              <span>{editing?.default_price !== undefined ? formatCurrency(editing.default_price) : ""}</span>
             </div>
             <div className="field">
               <label>{t("price.overrideLabel")}</label>

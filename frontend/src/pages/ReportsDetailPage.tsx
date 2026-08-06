@@ -6,6 +6,7 @@ import { RangeSelector } from "../components/RangeSelector";
 import { SalesTrendChart } from "../components/SalesTrendChart";
 import { getSalesReport } from "../api/reports";
 import type { SalesReportOut } from "../types/report";
+import { formatCurrency } from "../utils/currency";
 
 // UC-14 (en çok/az/hiç satılmayan) + UC-13/16 (satış raporu/kâr marjı) tek bir detay sayfasında.
 // "Satış raporları" ve "Kâr marjı / KPI" nav öğeleri ikisi de bu sayfaya gider (aynı veri, tek kaynak
@@ -45,7 +46,7 @@ export function ReportsDetailPage() {
           <section className={`cards${report.profit_margin_pct === null ? " c3" : ""}`}>
             <div className="card">
               <div className="lbl">{t("reports.totalSales")}</div>
-              <div className="page-title">{report.total_sales.toFixed(2)}</div>
+              <div className="page-title">{formatCurrency(report.total_sales)}</div>
             </div>
             {report.profit_margin_pct !== null && (
               <div className="card">
@@ -85,7 +86,7 @@ export function ReportsDetailPage() {
                     <span className="rank">{idx + 1}</span>
                     <div className="txt">
                       <span>{p.product_name}</span>
-                      <span className="muted-small">{p.quantity} adet · {p.revenue.toFixed(2)}</span>
+                      <span className="muted-small">{p.quantity} adet · {formatCurrency(p.revenue)}</span>
                     </div>
                   </div>
                 ))}
@@ -101,7 +102,7 @@ export function ReportsDetailPage() {
                     <span className="rank">{idx + 1}</span>
                     <div className="txt">
                       <span>{p.product_name}</span>
-                      <span className="muted-small">{p.quantity} adet · {p.revenue.toFixed(2)}</span>
+                      <span className="muted-small">{p.quantity} adet · {formatCurrency(p.revenue)}</span>
                     </div>
                   </div>
                 ))}

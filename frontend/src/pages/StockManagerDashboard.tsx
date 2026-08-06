@@ -6,6 +6,7 @@ import { homeLabelForRole } from "../components/navConfig";
 import { listStock, updateStock } from "../api/stock";
 import { ApiError } from "../api/client";
 import type { StockItem } from "../types/stock";
+import { formatCurrency } from "../utils/currency";
 
 // backend/app/routers/notifications.py::EXPIRING_WITHIN_DAYS ile aynı eşik (madde 11/UC-12).
 const EXPIRING_WITHIN_DAYS = 7;
@@ -144,7 +145,7 @@ export function StockManagerDashboard() {
                     <span className="muted-small">{item.sku}</span>
                     <span>{item.quantity}</span>
                     <span>{item.low_stock_threshold}</span>
-                    <span>{item.effective_price.toFixed(2)}</span>
+                    <span>{formatCurrency(item.effective_price)}</span>
                     <span className="pill">{low ? t("stockManager.low") : t("stockManager.sufficient")}</span>
                     <button className="btn sm ghost" onClick={() => openEdit(item)}>
                       {t("common.edit")}

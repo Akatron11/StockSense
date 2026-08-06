@@ -8,6 +8,7 @@ import { SalesTrendChart } from "../components/SalesTrendChart";
 import { getSalesReport } from "../api/reports";
 import { listStock } from "../api/stock";
 import type { SalesReportOut } from "../types/report";
+import { formatCurrency } from "../utils/currency";
 
 // backend/app/routers/notifications.py::EXPIRING_WITHIN_DAYS ile aynı eşik.
 const EXPIRING_WITHIN_DAYS = 7;
@@ -61,7 +62,7 @@ export function SellerManagerDashboard() {
           <section className="cards c2">
             <div className="card">
               <div className="lbl">{t("reports.sellerSalesCard")}</div>
-              <div className="page-title">{report.total_sales.toFixed(2)}</div>
+              <div className="page-title">{formatCurrency(report.total_sales)}</div>
             </div>
             <div className="card">
               <div className="lbl">{t("reports.expiringDiscountCard")}</div>

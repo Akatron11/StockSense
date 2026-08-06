@@ -1,4 +1,5 @@
 import type { SalesTrendPoint } from "../types/report";
+import { formatCurrency } from "../utils/currency";
 
 interface SalesTrendChartProps {
   trend: SalesTrendPoint[];
@@ -12,7 +13,7 @@ export function SalesTrendChart({ trend }: SalesTrendChartProps) {
   return (
     <div className="trend-chart">
       {trend.map((point) => (
-        <div className="trend-bar-col" key={point.day} title={`${point.day}: ${point.total_sales.toFixed(2)}`}>
+        <div className="trend-bar-col" key={point.day} title={`${point.day}: ${formatCurrency(point.total_sales)}`}>
           <div className="trend-bar" style={{ height: `${(point.total_sales / max) * 100}%` }} />
         </div>
       ))}

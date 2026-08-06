@@ -5,6 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { listProducts, createProduct, updateProduct } from "../api/products";
 import { ApiError } from "../api/client";
 import type { ProductRead } from "../types/product";
+import { formatCurrency } from "../utils/currency";
 
 interface ProductFormState {
   name: string;
@@ -161,8 +162,8 @@ export function ProductCatalogPage() {
                   <span>{product.name}</span>
                   <span className="muted-small">{product.sku}</span>
                   <span>{product.category ?? "—"}</span>
-                  <span>{product.default_price.toFixed(2)}</span>
-                  <span>{product.cost_price !== null && product.cost_price !== undefined ? product.cost_price.toFixed(2) : "—"}</span>
+                  <span>{formatCurrency(product.default_price)}</span>
+                  <span>{product.cost_price !== null && product.cost_price !== undefined ? formatCurrency(product.cost_price) : "—"}</span>
                   <button className="btn sm ghost" onClick={() => openEdit(product)}>
                     {t("common.edit")}
                   </button>

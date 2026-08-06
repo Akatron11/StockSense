@@ -7,6 +7,7 @@ import { RangeSelector } from "../components/RangeSelector";
 import { SalesTrendChart } from "../components/SalesTrendChart";
 import { getSalesReport } from "../api/reports";
 import type { SalesReportOut } from "../types/report";
+import { formatCurrency } from "../utils/currency";
 
 // prototype/genel-mudur-dashboard.html'in React karşılığı. region_manager de aynı bileşeni kullanır
 // (navConfig.ts kararı — Bölge Müdürü için ayrı wireframe yoktu, GM deseni bölge kapsamına ölçeklendirildi).
@@ -48,7 +49,7 @@ export function GeneralManagerDashboard() {
           <section className="cards">
             <div className="card">
               <div className="lbl">{t("reports.totalSales")}</div>
-              <div className="page-title">{report.total_sales.toFixed(2)}</div>
+              <div className="page-title">{formatCurrency(report.total_sales)}</div>
             </div>
             <div className="card">
               <div className="lbl">{t("reports.netMargin")}</div>
@@ -95,7 +96,7 @@ export function GeneralManagerDashboard() {
                 {report.breakdown.map((b) => (
                   <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr" }} key={b.id}>
                     <span>{b.label}</span>
-                    <span>{b.total_sales.toFixed(2)}</span>
+                    <span>{formatCurrency(b.total_sales)}</span>
                     <span>{b.profit_margin_pct !== null ? `%${b.profit_margin_pct.toFixed(1)}` : "—"}</span>
                   </div>
                 ))}

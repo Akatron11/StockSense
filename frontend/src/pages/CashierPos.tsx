@@ -10,6 +10,7 @@ import { initiateReturn, completeReturn } from "../api/returns";
 import { getLoginBranding } from "../api/auth";
 import { applyBrandColor } from "../theme/brandColor";
 import { ApiError } from "../api/client";
+import { formatCurrency } from "../utils/currency";
 import type { ProductRead } from "../types/product";
 import type { SaleDetail, SaleListItem } from "../types/sale";
 import "../styles/pos.css";
@@ -304,7 +305,7 @@ export function CashierPos() {
                 <div className="product-row" key={product.id} onClick={() => addToCart(product)}>
                   <span>{product.name}</span>
                   <span className="muted-small">{product.sku}</span>
-                  <span>{product.default_price.toFixed(2)}</span>
+                  <span>{formatCurrency(product.default_price)}</span>
                 </div>
               ))}
             </div>
@@ -343,8 +344,8 @@ export function CashierPos() {
                 value={line.quantity}
                 onChange={(e) => updateQuantity(line.product.id, Number(e.target.value))}
               />
-              <span>{line.product.default_price.toFixed(2)}</span>
-              <span>{(line.product.default_price * line.quantity).toFixed(2)}</span>
+              <span>{formatCurrency(line.product.default_price)}</span>
+              <span>{formatCurrency(line.product.default_price * line.quantity)}</span>
               <button className="rm" onClick={() => removeLine(line.product.id)} title={t("vendor.remove")}>
                 ×
               </button>
@@ -356,7 +357,7 @@ export function CashierPos() {
           <div className="totals">
             <div className="trow">
               <span>{t("pos.subtotal")}</span>
-              <span>{subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="trow">
               <span>{t("pos.discount")}</span>
@@ -364,12 +365,12 @@ export function CashierPos() {
             </div>
             <div className="trow grand">
               <span>{t("pos.total")}</span>
-              <span>{subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
           </div>
           {lastSaleTotal !== null && (
             <div className="muted-small" style={{ marginTop: 10 }}>
-              {t("pos.lastSaleCompleted", { total: lastSaleTotal.toFixed(2) })}
+              {t("pos.lastSaleCompleted", { total: formatCurrency(lastSaleTotal) })}
             </div>
           )}
           <div className="side-actions">
@@ -390,7 +391,7 @@ export function CashierPos() {
           <div className="modal-body">
             <div className="kv">
               <span>{t("pos.total")}</span>
-              <span>{subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="field">
               <label>{t("pos.paymentMethod")}</label>
@@ -448,7 +449,7 @@ export function CashierPos() {
                           #{sale.id} — {formatSaleDate(sale.sale_date, i18n.language)}
                         </span>
                         <span className="muted-small">
-                          {sale.total.toFixed(2)} · {sale.payment_method === "cash" ? t("pos.cash") : t("pos.card")}
+                          {formatCurrency(sale.total)} · {sale.payment_method === "cash" ? t("pos.cash") : t("pos.card")}
                         </span>
                       </div>
                     ))}

@@ -7,6 +7,7 @@ import { RangeSelector } from "../components/RangeSelector";
 import { SalesTrendChart } from "../components/SalesTrendChart";
 import { getSalesReport } from "../api/reports";
 import type { SalesReportOut } from "../types/report";
+import { formatCurrency } from "../utils/currency";
 
 // prototype/shube-mudur-dashboard.html'in React karşılığı. Wireframe'de "Bu ay" sabit aralıktı; kullanıcı
 // kararıyla seçilebilir aralığa (7/30/90 gün) geçildi (satış raporu backend tasarımı, PROCESS.md).
@@ -45,7 +46,7 @@ export function BranchManagerDashboard() {
           <section className="cards">
             <div className="card">
               <div className="lbl">{t("reports.totalSales")}</div>
-              <div className="page-title">{report.total_sales.toFixed(2)}</div>
+              <div className="page-title">{formatCurrency(report.total_sales)}</div>
             </div>
             <div className="card">
               <div className="lbl">{t("reports.netMargin")}</div>
@@ -86,7 +87,7 @@ export function BranchManagerDashboard() {
                     <div className="txt">
                       <span>{p.product_name}</span>
                       <span className="muted-small">
-                        {p.quantity} adet · {p.revenue.toFixed(2)}
+                        {p.quantity} adet · {formatCurrency(p.revenue)}
                       </span>
                     </div>
                   </div>
