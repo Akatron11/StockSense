@@ -163,3 +163,9 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .kv{display:flex;justify-content:space-between;font-size:13px;}
 .hintbox{font-size:11px;color:var(--muted);line-height:1.6;background:var(--rail);
       border-radius:var(--radius);padding:10px 12px;}
+
+/* kırılım (drill-down) tablosu + breadcrumb — bkz. ReportsDetailPage */
+.trow-clickable{background:none;border:none;font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;}
+.trow-clickable:hover{background:var(--rail);}
+.breadcrumb-link{background:none;border:none;font:inherit;color:inherit;cursor:pointer;padding:0;text-decoration:underline;}
+.breadcrumb-link:hover{opacity:0.7;}
