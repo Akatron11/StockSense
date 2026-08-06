@@ -8,6 +8,7 @@ import { ProductCatalogPage } from "./pages/ProductCatalogPage";
 import { PriceManagementPage } from "./pages/PriceManagementPage";
 import { StockRequestPage } from "./pages/StockRequestPage";
 import { LayoutSuggestionPage } from "./pages/LayoutSuggestionPage";
+import { ReportsDetailPage } from "./pages/ReportsDetailPage";
 import { EmployeeManagementPage } from "./pages/EmployeeManagementPage";
 import { StaffRegistrationPage } from "./pages/StaffRegistrationPage";
 import { ShiftCalendarPage } from "./pages/ShiftCalendarPage";
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportsDetailPage />
               </ProtectedRoute>
             }
           />

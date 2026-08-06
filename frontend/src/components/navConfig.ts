@@ -18,8 +18,8 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     {
       items: [
         { label: "nav.home", path: "/" },
-        { label: "nav.salesReports" },
-        { label: "nav.profitKpi" },
+        { label: "nav.salesReports", path: "/reports" },
+        { label: "nav.profitKpi", path: "/reports" },
         { label: "nav.accountManagement", path: "/employees" },
       ],
     },
@@ -38,8 +38,8 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     {
       items: [
         { label: "nav.home", path: "/" },
-        { label: "nav.salesReports" },
-        { label: "nav.profitKpi" },
+        { label: "nav.salesReports", path: "/reports" },
+        { label: "nav.profitKpi", path: "/reports" },
         { label: "nav.accountManagement", path: "/employees" },
       ],
     },
@@ -50,8 +50,8 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
       items: [
         { label: "nav.home", path: "/" },
         { label: "nav.productCatalog", path: "/catalog" },
-        { label: "nav.salesReports" },
-        { label: "nav.profitKpi" },
+        { label: "nav.salesReports", path: "/reports" },
+        { label: "nav.profitKpi", path: "/reports" },
         { label: "nav.accountManagement", path: "/employees" },
       ],
     },
@@ -66,7 +66,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
       items: [
         { label: "nav.home", path: "/" },
         { label: "nav.priceManagement", path: "/price" },
-        { label: "nav.salesReports" },
+        { label: "nav.salesReports", path: "/reports" },
         { label: "nav.layoutSuggestion", path: "/layout" },
       ],
     },
