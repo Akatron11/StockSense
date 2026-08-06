@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_claims
 from ..models import Branch, Product, Region, Sale, SaleItem, Return, Stock
-from ..schemas.report import BreakdownItem, SalesReportOut, SalesTrendPoint, TopProductItem
+from ..schemas.report import BreakdownItem, NeverSoldItem, SalesReportOut, SalesTrendPoint, TopProductItem
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -160,6 +160,22 @@ def get_sales_report(
         reverse=True,
     )[:5]
 
+    least_selling = sorted(
+        (TopProductItem(product_id=pid, product_name=name, quantity=qty, revenue=revenue) for pid, (name, qty, revenue) in product_agg.items()),
+        key=lambda p: p.revenue,
+    )[:5]
+
+    sold_product_ids = set(product_agg.keys())
+    never_sold: list[NeverSoldItem] = []
+    if branch_ids:
+        never_sold_rows = db.execute(
+            select(Product.id, Product.name)
+            .join(Stock, Stock.product_id == Product.id)
+            .where(Stock.branch_id.in_(branch_ids), Product.id.notin_(sold_product_ids))
+            .distinct()
+        ).all()
+        never_sold = [NeverSoldItem(product_id=pid, product_name=name) for pid, name in never_sold_rows]
+
     breakdown: list[BreakdownItem] = []
     if scope == "region":
         branch_names = dict(db.execute(select(Branch.id, Branch.name).where(Branch.id.in_(branch_ids))).all())
@@ -198,6 +214,8 @@ def get_sales_report(
         trend=trend,
         top_products=top_products,
         breakdown=breakdown,
+        least_selling=least_selling,
+        never_sold=never_sold,
     )
 
 

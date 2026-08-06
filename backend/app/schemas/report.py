@@ -22,6 +22,11 @@ class BreakdownItem(BaseModel):
     profit_margin_pct: float | None = None
 
 
+class NeverSoldItem(BaseModel):
+    product_id: int
+    product_name: str
+
+
 class SalesReportOut(BaseModel):
     scope: str  # "branch" | "region" | "company"
     scope_label: str
@@ -36,3 +41,5 @@ class SalesReportOut(BaseModel):
     trend: list[SalesTrendPoint]
     top_products: list[TopProductItem]
     breakdown: list[BreakdownItem]
+    least_selling: list[TopProductItem]
+    never_sold: list[NeverSoldItem]
