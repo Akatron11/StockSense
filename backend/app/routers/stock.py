@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims
-from ..models import Branch, Product, Region, Stock
+from ..models import Branch, LayoutZone, Product, Region, Stock
 from ..schemas.stock import StockOut, StockUpdate
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
@@ -12,9 +12,10 @@ router = APIRouter(prefix="/api/stock", tags=["stock"])
 # stocksense-api-tr.md — "Şube Stok Durumu": her rol sadece kendi alanını değiştirebilir.
 # branch_manager/region_manager/general_manager, mimari madde 2'deki yetki kalıtımı ilkesi gereği
 # Stock Manager + Seller Manager'ın TÜM alanlarını kapsar (2026-08-07, kullanıcı kararı).
-_INHERITED_FIELDS = {"quantity", "low_stock_threshold", "price_override"}
+# zone_id (UC-15 SHOULD, 2026-08-07) seller_manager'ın yetkisi — kalıtım zinciriyle üst rollere de geçer.
+_INHERITED_FIELDS = {"quantity", "low_stock_threshold", "price_override", "zone_id"}
 ROLE_ALLOWED_FIELDS = {
-    "seller_manager": {"price_override"},
+    "seller_manager": {"price_override", "zone_id"},
     "stock_manager": {"quantity", "low_stock_threshold"},
     "branch_manager": _INHERITED_FIELDS,
     "region_manager": _INHERITED_FIELDS,
@@ -70,6 +71,7 @@ def _to_stock_out(stock: Stock, product: Product) -> StockOut:
         quantity=stock.quantity,
         low_stock_threshold=stock.low_stock_threshold,
         price_override=stock.price_override,
+        zone_id=stock.zone_id,
         product_name=product.name,
         sku=product.sku,
         best_before_date=product.best_before_date,
@@ -108,6 +110,14 @@ def update_stock(
         raise HTTPException(status_code=403, detail=f"Bu role izinli olmayan alanlar: {sorted(unauthorized)}")
 
     branch = _resolve_target_branch(claims, branch_id, db)
+
+    if "zone_id" in fields and fields["zone_id"] is not None:
+        zone = db.scalar(
+            select(LayoutZone).where(LayoutZone.id == fields["zone_id"], LayoutZone.branch_id == branch.id)
+        )
+        if zone is None:
+            raise HTTPException(status_code=404, detail="Zone not found")
+
     product = db.scalar(
         select(Product).where(Product.id == product_id, Product.company_id == claims["company_id"])
     )

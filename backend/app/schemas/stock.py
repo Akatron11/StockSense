@@ -7,6 +7,7 @@ class StockUpdate(BaseModel):
     quantity: int | None = None
     low_stock_threshold: int | None = None
     price_override: float | None = None
+    zone_id: int | None = None
 
 
 class StockOut(BaseModel):
@@ -17,6 +18,7 @@ class StockOut(BaseModel):
     quantity: int
     low_stock_threshold: int
     price_override: float | None = None
+    zone_id: int | None = None
     product_name: str
     sku: str
     best_before_date: date | None = None
