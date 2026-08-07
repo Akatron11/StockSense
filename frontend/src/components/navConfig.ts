@@ -26,9 +26,9 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     {
       groupLabel: "nav.branchOperations",
       items: [
-        { label: "nav.stockList" },
+        { label: "nav.stockList", path: "/stock" },
         { label: "nav.stockRequest" },
-        { label: "nav.priceManagement" },
+        { label: "nav.priceManagement", path: "/price" },
         { label: "nav.layoutSuggestion" },
       ],
     },
@@ -43,7 +43,10 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
         { label: "nav.accountManagement", path: "/employees" },
       ],
     },
-    { groupLabel: "nav.regionDetail", items: [{ label: "nav.stock" }, { label: "nav.price" }, { label: "nav.layout" }] },
+    {
+      groupLabel: "nav.regionDetail",
+      items: [{ label: "nav.stock", path: "/stock" }, { label: "nav.price", path: "/price" }, { label: "nav.layout" }],
+    },
   ],
   general_manager: [
     {
@@ -57,7 +60,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     },
     {
       groupLabel: "nav.branchRegionDetail",
-      items: [{ label: "nav.stock" }, { label: "nav.price" }, { label: "nav.layout" }],
+      items: [{ label: "nav.stock", path: "/stock" }, { label: "nav.price", path: "/price" }, { label: "nav.layout" }],
     },
   ],
   stock_manager: [{ items: [{ label: "nav.stockList", path: "/" }, { label: "nav.stockRequest", path: "/stock-request" }] }],

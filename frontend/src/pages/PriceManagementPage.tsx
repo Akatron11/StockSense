@@ -5,6 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { listProducts } from "../api/products";
 import { listStock, updateStock } from "../api/stock";
 import { ApiError } from "../api/client";
+import { useBranchScope } from "../hooks/useBranchScope";
 import type { ProductRead } from "../types/product";
 import type { StockItem } from "../types/stock";
 import { formatCurrency } from "../utils/currency";
@@ -21,9 +22,12 @@ interface PriceRow {
 // prototype/fiyat-yonetimi.html'in React karşılığı (UC-07 — Seller Manager, kendi şubesi). Backend
 // zaten hazırdı (GET /api/products + GET/PATCH /api/stock, price_override zaten sadece seller_manager'a
 // açık) — burada sadece frontend eklendi, backend'e dokunulmadı.
+// Mimari madde 2 — yetki kalıtımı gereği branch_manager/region_manager/general_manager da bu ekranı
+// kullanır (2026-08-07); "nav.priceManagement"/"nav.price" üzerinden aynı `/price` route'una bağlı.
 export function PriceManagementPage() {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const { needsSelector, branches, branchId, setBranchId } = useBranchScope(user?.role, token);
 
   const [rows, setRows] = useState<PriceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,10 +41,11 @@ export function PriceManagementPage() {
 
   async function load() {
     if (!token) return;
+    if (needsSelector && branchId === undefined) return;
     setLoading(true);
     setLoadError(null);
     try {
-      const [products, stock] = await Promise.all([listProducts(token), listStock(token)]);
+      const [products, stock] = await Promise.all([listProducts(token), listStock(token, branchId)]);
       const stockByProduct = new Map<number, StockItem>(stock.map((s) => [s.product_id, s]));
       setRows(
         products.map((p: ProductRead) => {
@@ -65,7 +70,7 @@ export function PriceManagementPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, branchId]);
 
   const filtered = rows.filter((r) => {
     const q = search.trim().toLowerCase();
@@ -84,9 +89,12 @@ export function PriceManagementPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      await updateStock(token, editing.product_id, {
-        price_override: overrideInput.trim() === "" ? null : Number(overrideInput),
-      });
+      await updateStock(
+        token,
+        editing.product_id,
+        { price_override: overrideInput.trim() === "" ? null : Number(overrideInput) },
+        branchId,
+      );
       setEditing(null);
       await load();
     } catch (err) {
@@ -101,7 +109,7 @@ export function PriceManagementPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      await updateStock(token, editing.product_id, { price_override: null });
+      await updateStock(token, editing.product_id, { price_override: null }, branchId);
       setEditing(null);
       await load();
     } catch (err) {
@@ -113,7 +121,24 @@ export function PriceManagementPage() {
 
   return (
     <AppShell pageTitle={t("nav.priceManagement")}>
-      <div className="scope">{t("price.scopeDesc")}</div>
+      <div className="scope">{needsSelector ? t("price.scopeDescMulti") : t("price.scopeDesc")}</div>
+
+      {needsSelector && (
+        <div className="field" style={{ maxWidth: 280, marginBottom: 12 }}>
+          <label>{t("stockManager.branchSelectLabel")}</label>
+          <select
+            className="input"
+            value={branchId ?? ""}
+            onChange={(e) => setBranchId(Number(e.target.value))}
+          >
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="panel">
         <div className="panel-head">

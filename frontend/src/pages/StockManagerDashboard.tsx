@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
-import { homeLabelForRole } from "../components/navConfig";
 import { listStock, updateStock } from "../api/stock";
 import { ApiError } from "../api/client";
+import { useBranchScope } from "../hooks/useBranchScope";
 import type { StockItem } from "../types/stock";
 import { formatCurrency } from "../utils/currency";
 
@@ -13,10 +13,14 @@ const EXPIRING_WITHIN_DAYS = 7;
 
 // prototype/stok-manager-dashboard.html'in React karşılığı — Stok Yöneticisi'nin "Ana sayfa"sı zaten şube stok
 // listesinin kendisi (ayrı bir rapor/KPI backend'i gerekmiyor, mevcut GET/PATCH /api/stock yeterli).
+// Mimari madde 2 — yetki kalıtımı gereği branch_manager/region_manager/general_manager da bu ekranı kullanır
+// (2026-08-07); "nav.stockList"/"nav.stock" üzerinden `/stock` route'una da bağlı, sadece stock_manager'ın
+// "Ana sayfa"sı değil.
 export function StockManagerDashboard() {
   const { t } = useTranslation();
   const { token, user } = useAuth();
-  const activeLabel = user ? t(homeLabelForRole(user.role)) : "";
+  const activeLabel = t("nav.stockList");
+  const { needsSelector, branches, branchId, setBranchId } = useBranchScope(user?.role, token);
 
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,10 +35,11 @@ export function StockManagerDashboard() {
 
   async function load() {
     if (!token) return;
+    if (needsSelector && branchId === undefined) return;
     setLoading(true);
     setLoadError(null);
     try {
-      setItems(await listStock(token));
+      setItems(await listStock(token, branchId));
     } catch {
       setLoadError(t("stockManager.loadError"));
     } finally {
@@ -45,7 +50,7 @@ export function StockManagerDashboard() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, branchId]);
 
   const filtered = items.filter((item) => {
     const q = search.trim().toLowerCase();
@@ -72,10 +77,15 @@ export function StockManagerDashboard() {
     setSaving(true);
     setSaveError(null);
     try {
-      await updateStock(token, editing.product_id, {
-        quantity: Number(quantityInput),
-        low_stock_threshold: Number(thresholdInput),
-      });
+      await updateStock(
+        token,
+        editing.product_id,
+        {
+          quantity: Number(quantityInput),
+          low_stock_threshold: Number(thresholdInput),
+        },
+        branchId,
+      );
       setEditing(null);
       await load();
     } catch (err) {
@@ -87,7 +97,24 @@ export function StockManagerDashboard() {
 
   return (
     <AppShell pageTitle={activeLabel}>
-      <div className="scope">{t("stockManager.scopeDesc")}</div>
+      <div className="scope">{needsSelector ? t("stockManager.scopeDescMulti") : t("stockManager.scopeDesc")}</div>
+
+      {needsSelector && (
+        <div className="field" style={{ maxWidth: 280, marginBottom: 12 }}>
+          <label>{t("stockManager.branchSelectLabel")}</label>
+          <select
+            className="input"
+            value={branchId ?? ""}
+            onChange={(e) => setBranchId(Number(e.target.value))}
+          >
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <section className="cards c3">
         <div className="card">

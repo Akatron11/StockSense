@@ -188,6 +188,7 @@
   },
   "price": {
     "scopeDesc": "Kapsam: kendi şubesi · boş override → varsayılan fiyat geçerli",
+    "scopeDescMulti": "Kapsam: seçili şube · boş override → varsayılan fiyat geçerli",
     "loadError": "Fiyat listesi alınamadı.",
     "title": "Ürün fiyatları",
     "searchPlaceholder": "Ara: ürün / SKU",
@@ -242,6 +243,8 @@
   },
   "stockManager": {
     "scopeDesc": "Kapsam: kendi şubesi",
+    "scopeDescMulti": "Kapsam: seçili şube",
+    "branchSelectLabel": "Şube",
     "lowStockCard": "Düşük stoktaki ürün",
     "expiringCard": "SKT yaklaşan ürün",
     "totalVarietiesCard": "Toplam ürün çeşidi",

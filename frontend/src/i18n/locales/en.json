@@ -188,6 +188,7 @@
   },
   "price": {
     "scopeDesc": "Scope: own branch · empty override → default price applies",
+    "scopeDescMulti": "Scope: selected branch · empty override → default price applies",
     "loadError": "Could not load the price list.",
     "title": "Product prices",
     "searchPlaceholder": "Search: product / SKU",
@@ -242,6 +243,8 @@
   },
   "stockManager": {
     "scopeDesc": "Scope: own branch",
+    "scopeDescMulti": "Scope: selected branch",
+    "branchSelectLabel": "Branch",
     "lowStockCard": "Low-stock products",
     "expiringCard": "Products nearing expiry",
     "totalVarietiesCard": "Total product varieties",

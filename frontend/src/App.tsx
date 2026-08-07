@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { CashierPos } from "./pages/CashierPos";
 import { ProductCatalogPage } from "./pages/ProductCatalogPage";
+import { StockManagerDashboard } from "./pages/StockManagerDashboard";
 import { PriceManagementPage } from "./pages/PriceManagementPage";
 import { StockRequestPage } from "./pages/StockRequestPage";
 import { LayoutSuggestionPage } from "./pages/LayoutSuggestionPage";
@@ -41,6 +42,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PriceManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stock"
+            element={
+              <ProtectedRoute>
+                <StockManagerDashboard />
               </ProtectedRoute>
             }
           />
