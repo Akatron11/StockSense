@@ -58,3 +58,6 @@ docker-compose.override.yml
 # --- Log dosyaları ---
 *.log
 logs/
+
+# --- Superpowers brainstorming companion (geçici mockup ekranları) ---
+.superpowers/
