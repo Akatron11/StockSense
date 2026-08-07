@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims, require_role
-from ..models import LayoutRecommendationApplication, Product
+from ..models import LayoutRecommendationApplication, Product, Stock
 from ..schemas.layout_suggestion import (
     LayoutSuggestionApplyIn,
     LayoutSuggestionApplyOut,
@@ -40,6 +40,17 @@ def get_layout_suggestion(claims: dict = Depends(get_current_claims), db: Sessio
         )
     }
 
+    product_ids = {pid for s in result["suggestions"] for pid in (s["product_a_id"], s["product_b_id"])}
+    zone_by_product: dict[int, int | None] = {}
+    if product_ids:
+        zone_by_product = dict(
+            db.execute(
+                select(Stock.product_id, Stock.zone_id).where(
+                    Stock.branch_id == branch_id, Stock.product_id.in_(product_ids)
+                )
+            ).all()
+        )
+
     suggestions = []
     for s in result["suggestions"]:
         key = _normalize_pair(s["product_a_id"], s["product_b_id"])
@@ -48,8 +59,10 @@ def get_layout_suggestion(claims: dict = Depends(get_current_claims), db: Sessio
             LayoutSuggestionItem(
                 product_a_id=s["product_a_id"],
                 product_a_name=s["product_a_name"],
+                product_a_zone_id=zone_by_product.get(s["product_a_id"]),
                 product_b_id=s["product_b_id"],
                 product_b_name=s["product_b_name"],
+                product_b_zone_id=zone_by_product.get(s["product_b_id"]),
                 score=s["score"],
                 applied=applied_row is not None,
                 applied_at=applied_row.applied_at if applied_row else None,

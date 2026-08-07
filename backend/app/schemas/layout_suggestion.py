@@ -7,8 +7,10 @@ from pydantic import BaseModel
 class LayoutSuggestionItem(BaseModel):
     product_a_id: int
     product_a_name: str
+    product_a_zone_id: int | None = None
     product_b_id: int
     product_b_name: str
+    product_b_zone_id: int | None = None
     score: float
     applied: bool
     applied_at: datetime | None = None
