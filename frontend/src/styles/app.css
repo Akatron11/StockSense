@@ -169,3 +169,11 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .trow-clickable:hover{background:var(--rail);}
 .breadcrumb-link{background:none;border:none;font:inherit;color:inherit;cursor:pointer;padding:0;text-decoration:underline;}
 .breadcrumb-link:hover{opacity:0.7;}
+
+.zone-canvas{position:relative;border:1px dashed var(--line);border-radius:var(--radius);
+  background:var(--panel);overflow:hidden;touch-action:none;}
+.zone-canvas-overlay{position:absolute;left:0;top:0;pointer-events:none;}
+.zone-box{position:absolute;display:flex;align-items:center;justify-content:center;
+  background:#ececec;border:1px solid var(--line);border-radius:6px;font-size:12px;
+  color:var(--ink);cursor:grab;user-select:none;text-align:center;padding:4px;}
+.zone-box:active{cursor:grabbing;}
