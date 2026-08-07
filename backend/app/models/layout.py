@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin
+from .base import Base, TimestampMixin, UpdatedAtMixin
 
 
 class LayoutRecommendationApplication(Base, TimestampMixin):
@@ -32,3 +32,23 @@ class LayoutRecommendationApplication(Base, TimestampMixin):
     product_a: Mapped["Product"] = relationship(foreign_keys=[product_a_id])
     product_b: Mapped["Product"] = relationship(foreign_keys=[product_b_id])
     applied_by_employee: Mapped["Employee"] = relationship(foreign_keys=[applied_by])
+
+
+class LayoutZone(Base, TimestampMixin, UpdatedAtMixin):
+    """UC-15 SHOULD — Seller Manager'ın kendi şubesi için serbestçe oluşturduğu, floor-plan
+    üzerinde konumlandırılan isimli alan (raf/reyon bölgesi). Gerçek fiziksel ölçü değil,
+    görsel/göreli bir temsil. Bkz.
+    docs/superpowers/specs/2026-08-07-layout-floorplan-should-could-design.md.
+    """
+
+    __tablename__ = "layout_zones"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    x: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    y: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    branch: Mapped["Branch"] = relationship()

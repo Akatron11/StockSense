@@ -1,6 +1,6 @@
 from .base import Base
 from .catalog import Product, Stock, StockRequest
-from .layout import LayoutRecommendationApplication
+from .layout import LayoutRecommendationApplication, LayoutZone
 from .sales import Return, ReturnItem, Sale, SaleItem
 from .staff import Employee, Shift
 from .tenancy import Branch, Company, CompanyBranding, CompanyFeature, Region
@@ -22,4 +22,5 @@ __all__ = [
     "Return",
     "ReturnItem",
     "LayoutRecommendationApplication",
+    "LayoutZone",
 ]

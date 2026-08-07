@@ -35,9 +35,13 @@ class Stock(Base, TimestampMixin, UpdatedAtMixin):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     price_override: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    zone_id: Mapped[int | None] = mapped_column(
+        ForeignKey("layout_zones.id", ondelete="SET NULL"), nullable=True
+    )
 
     product: Mapped["Product"] = relationship(back_populates="stock")
     branch: Mapped["Branch"] = relationship(back_populates="stock")
+    zone: Mapped["LayoutZone | None"] = relationship()
 
 
 class StockRequest(Base, TimestampMixin):
