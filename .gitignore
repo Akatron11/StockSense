@@ -61,3 +61,6 @@ logs/
 
 # --- Superpowers brainstorming companion (geçici mockup ekranları) ---
 .superpowers/
+
+# --- Git worktrees (superpowers:using-git-worktrees) ---
+.worktrees/
