@@ -28,9 +28,11 @@ export function LayoutSuggestionPage() {
   const [applyError, setApplyError] = useState<string | null>(null);
 
   const [zones, setZones] = useState<LayoutZoneOut[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(true);
   const [positions, setPositions] = useState<Record<number, ZonePosition>>({});
   const [editingZone, setEditingZone] = useState<LayoutZoneOut | "new" | null>(null);
   const [zoneError, setZoneError] = useState<string | null>(null);
+  const [zoneLoadError, setZoneLoadError] = useState<string | null>(null);
 
   const [simulating, setSimulating] = useState(false);
   const [baselineScore, setBaselineScore] = useState<number | null>(null);
@@ -40,16 +42,30 @@ export function LayoutSuggestionPage() {
     if (!token) return;
     setLoading(true);
     setLoadError(null);
-    try {
-      const [suggestion, zoneList] = await Promise.all([getLayoutSuggestion(token), listLayoutZones(token)]);
-      setData(suggestion);
-      setZones(zoneList);
-      setPositions(Object.fromEntries(zoneList.map((z) => [z.id, { x: z.x, y: z.y }])));
-    } catch {
-      setLoadError(t("layoutSuggestion.loadError"));
-    } finally {
-      setLoading(false);
-    }
+    setZonesLoading(true);
+    setZoneLoadError(null);
+    const suggestionPromise = (async () => {
+      try {
+        const suggestion = await getLayoutSuggestion(token);
+        setData(suggestion);
+      } catch {
+        setLoadError(t("layoutSuggestion.loadError"));
+      } finally {
+        setLoading(false);
+      }
+    })();
+    const zonePromise = (async () => {
+      try {
+        const zoneList = await listLayoutZones(token);
+        setZones(zoneList);
+        setPositions(Object.fromEntries(zoneList.map((z) => [z.id, { x: z.x, y: z.y }])));
+      } catch {
+        setZoneLoadError(t("layoutZone.loadError"));
+      } finally {
+        setZonesLoading(false);
+      }
+    })();
+    await Promise.all([suggestionPromise, zonePromise]);
   }
 
   useEffect(() => {
@@ -83,6 +99,7 @@ export function LayoutSuggestionPage() {
     if (simulating || !token) return;
     try {
       await updateLayoutZone(token, zoneId, { x, y });
+      setZones((zs) => zs.map((z) => (z.id === zoneId ? { ...z, x, y } : z)));
     } catch {
       setZoneError(t("layoutZone.saveFailed"));
       await load();
@@ -145,17 +162,20 @@ export function LayoutSuggestionPage() {
       <section className="panel" style={{ marginBottom: 14 }}>
         <div className="panel-head">
           {t("layoutZone.planTitle")}
-          {liveScore !== null && (
+          {liveScore !== null ? (
             <span className="hint">
               {simulating && baselineScore !== null
                 ? t("layoutZone.scoreSimulating", { baseline: baselineScore, live: liveScore, delta: scoreDelta })
                 : t("layoutZone.scoreLabel", { score: liveScore })}
             </span>
+          ) : (
+            zones.length > 0 && <span className="hint">{t("layoutZone.scoreUnavailable")}</span>
           )}
         </div>
         <div className="panel-body">
           {zoneError && <div className="error-text">{zoneError}</div>}
-          {loading ? (
+          {zoneLoadError && <div className="error-text">{zoneLoadError}</div>}
+          {zonesLoading ? (
             <div className="muted-small">{t("common.loading")}</div>
           ) : zones.length === 0 ? (
             <>

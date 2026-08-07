@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LayoutZoneProduct(BaseModel):
@@ -7,15 +7,15 @@ class LayoutZoneProduct(BaseModel):
 
 
 class LayoutZoneCreate(BaseModel):
-    name: str
-    width: int
-    height: int
+    name: str = Field(max_length=100)
+    width: int = Field(gt=0)
+    height: int = Field(gt=0)
 
 
 class LayoutZoneUpdate(BaseModel):
-    name: str | None = None
-    width: int | None = None
-    height: int | None = None
+    name: str | None = Field(default=None, max_length=100)
+    width: int | None = Field(default=None, gt=0)
+    height: int | None = Field(default=None, gt=0)
     x: int | None = None
     y: int | None = None
 

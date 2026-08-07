@@ -31,6 +31,10 @@ export function ZoneEditorForm({ zone, onSaved, onCancel }: ZoneEditorFormProps)
   const [searchError, setSearchError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Create modunda createLayoutZone başarılı olduktan sonra ama ürün ataması (updateStock)
+  // başarısız olursa, zone prop'u hala null kalır (parent'tan geliyor, değişmiyor) — bu yüzden
+  // retry'de zone'un zaten oluşturulduğunu buradan takip ediyoruz, ikinci kez create'e düşmesin diye.
+  const [createdZoneId, setCreatedZoneId] = useState<number | null>(null);
 
   async function handleSearch() {
     if (!token || !query.trim()) return;
@@ -63,9 +67,14 @@ export function ZoneEditorForm({ zone, onSaved, onCancel }: ZoneEditorFormProps)
     setSaving(true);
     setSaveError(null);
     try {
-      const savedZone = zone
-        ? await updateLayoutZone(token, zone.id, { name, width: widthNum, height: heightNum })
-        : await createLayoutZone(token, { name, width: widthNum, height: heightNum });
+      const effectiveZoneId = zone?.id ?? createdZoneId;
+      let savedZone: { id: number };
+      if (effectiveZoneId) {
+        savedZone = await updateLayoutZone(token, effectiveZoneId, { name, width: widthNum, height: heightNum });
+      } else {
+        savedZone = await createLayoutZone(token, { name, width: widthNum, height: heightNum });
+        setCreatedZoneId(savedZone.id);
+      }
 
       const previousIds = zone?.products.map((p) => p.id) ?? [];
       const currentIds = assigned.map((p) => p.id);

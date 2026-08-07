@@ -266,7 +266,9 @@
     "assignedProducts": "Products in this zone",
     "noProductsYet": "No products added yet.",
     "invalidForm": "Zone name and dimensions must be valid.",
-    "saveFailed": "Could not be saved."
+    "saveFailed": "Could not be saved.",
+    "loadError": "Could not load the zone list.",
+    "scoreUnavailable": "Assign products to zones to see a layout score"
   },
   "stockManager": {
     "scopeDesc": "Scope: own branch",

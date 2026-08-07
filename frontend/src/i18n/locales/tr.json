@@ -266,7 +266,9 @@
     "assignedProducts": "Bu zone'daki ürünler",
     "noProductsYet": "Henüz ürün eklenmedi.",
     "invalidForm": "Zone adı ve boyutları geçerli olmalı.",
-    "saveFailed": "Kaydedilemedi."
+    "saveFailed": "Kaydedilemedi.",
+    "loadError": "Zone listesi yüklenemedi.",
+    "scoreUnavailable": "Simülasyon için önce ürünleri zone'lara atayın"
   },
   "stockManager": {
     "scopeDesc": "Kapsam: kendi şubesi",
