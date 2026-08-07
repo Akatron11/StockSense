@@ -65,7 +65,9 @@
     "firstName": "First name",
     "lastName": "Last name",
     "age": "Age",
-    "address": "Address"
+    "address": "Address",
+    "remove": "Remove",
+    "delete": "Delete"
   },
   "roles": {
     "cashier": "Cashier",
@@ -240,6 +242,31 @@
     "applied": "Applied",
     "applyFailed": "Could not apply.",
     "applyFailedWithStatus": "Could not apply ({{status}})."
+  },
+  "layoutZone": {
+    "planTitle": "Store plan",
+    "scoreLabel": "Layout score: {{score}}",
+    "scoreSimulating": "Current: {{baseline}} → Simulation: {{live}} ({{delta}})",
+    "emptyState": "You haven't created a store plan yet.",
+    "addZone": "Add zone",
+    "startSimulation": "Simulation mode",
+    "exitSimulation": "Exit simulation",
+    "colName": "Zone name",
+    "colProductCount": "Product count",
+    "colAction": "Action",
+    "createTitle": "New zone",
+    "editTitle": "Edit zone",
+    "nameLabel": "Zone name",
+    "widthLabel": "Width",
+    "heightLabel": "Height",
+    "productsLabel": "Search and add products",
+    "searchPlaceholder": "Search product: name / SKU",
+    "searchError": "An error occurred while searching.",
+    "addProduct": "Add",
+    "assignedProducts": "Products in this zone",
+    "noProductsYet": "No products added yet.",
+    "invalidForm": "Zone name and dimensions must be valid.",
+    "saveFailed": "Could not be saved."
   },
   "stockManager": {
     "scopeDesc": "Scope: own branch",

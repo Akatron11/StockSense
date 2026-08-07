@@ -65,7 +65,9 @@
     "firstName": "Ad",
     "lastName": "Soyad",
     "age": "Yaş",
-    "address": "Adres"
+    "address": "Adres",
+    "remove": "Çıkar",
+    "delete": "Sil"
   },
   "roles": {
     "cashier": "Kasiyer",
@@ -240,6 +242,31 @@
     "applied": "Uygulandı",
     "applyFailed": "Uygulanamadı.",
     "applyFailedWithStatus": "Uygulanamadı ({{status}})."
+  },
+  "layoutZone": {
+    "planTitle": "Mağaza planı",
+    "scoreLabel": "Yerleşim skoru: {{score}}",
+    "scoreSimulating": "Mevcut: {{baseline}} → Simülasyon: {{live}} ({{delta}})",
+    "emptyState": "Henüz bir mağaza planı oluşturmadınız.",
+    "addZone": "Zone ekle",
+    "startSimulation": "Simülasyon modu",
+    "exitSimulation": "Simülasyonu kapat",
+    "colName": "Zone adı",
+    "colProductCount": "Ürün sayısı",
+    "colAction": "İşlem",
+    "createTitle": "Yeni zone",
+    "editTitle": "Zone düzenle",
+    "nameLabel": "Zone adı",
+    "widthLabel": "Genişlik",
+    "heightLabel": "Yükseklik",
+    "productsLabel": "Ürün ara ve ekle",
+    "searchPlaceholder": "Ürün ara: isim / SKU",
+    "searchError": "Arama sırasında hata oluştu.",
+    "addProduct": "Ekle",
+    "assignedProducts": "Bu zone'daki ürünler",
+    "noProductsYet": "Henüz ürün eklenmedi.",
+    "invalidForm": "Zone adı ve boyutları geçerli olmalı.",
+    "saveFailed": "Kaydedilemedi."
   },
   "stockManager": {
     "scopeDesc": "Kapsam: kendi şubesi",
