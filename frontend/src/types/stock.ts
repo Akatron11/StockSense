@@ -5,6 +5,7 @@ export interface StockItem {
   quantity: number;
   low_stock_threshold: number;
   price_override: number | null;
+  zone_id: number | null;
   product_name: string;
   sku: string;
   best_before_date: string | null;
@@ -15,4 +16,5 @@ export interface StockUpdatePayload {
   quantity?: number;
   low_stock_threshold?: number;
   price_override?: number | null;
+  zone_id?: number | null;
 }

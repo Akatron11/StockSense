@@ -2,8 +2,10 @@
 export interface LayoutSuggestionItem {
   product_a_id: number;
   product_a_name: string;
+  product_a_zone_id: number | null;
   product_b_id: number;
   product_b_name: string;
+  product_b_zone_id: number | null;
   score: number;
   applied: boolean;
   applied_at: string | null;
