@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { createEmployee, listEmployees, updateEmployee } from "../api/employees";
-import { ApiError } from "../api/client";
+import { apiErrorMessage } from "../api/client";
 import type { EmployeeOut } from "../types/employee";
 
 interface FormState {
@@ -102,12 +102,7 @@ export function StaffRegistrationPage() {
       setModalOpen(false);
       await load();
     } catch (err) {
-      if (err instanceof ApiError) {
-        const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
-      } else {
-        setSaveError(t("common.saveFailed"));
-      }
+      setSaveError(apiErrorMessage(err, t("common.saveFailed")));
     } finally {
       setSaving(false);
     }

@@ -19,12 +19,13 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 
 /* ---- ORTAK KABUK ---- */
 .app{display:flex;min-height:100vh;}
-.rail{width:230px;background:var(--rail);border-right:1px solid var(--line);
-      display:flex;flex-direction:column;padding:14px 12px;}
-.logo{display:flex;align-items:center;margin-bottom:6px;min-height:40px;}
-.logo:not(.has-image){height:40px;border:1px dashed var(--line);border-radius:var(--radius);
+.rail{width:300px;background:var(--rail);border-right:1px solid var(--line);
+      display:flex;flex-direction:column;padding:14px 6px;}
+.logo{display:flex;align-items:center;justify-content:center;margin-bottom:6px;min-height:180px;}
+.logo:not(.has-image){height:180px;width:100%;border:1px dashed var(--line);border-radius:var(--radius);
       justify-content:center;color:var(--muted);font-size:12px;letter-spacing:.12em;}
-.logo-img{max-width:100%;max-height:56px;width:auto;height:auto;object-fit:contain;}
+.logo-img{max-width:100%;max-height:180px;width:auto;height:auto;object-fit:contain;}
+.brand-name{font-size:17px;font-weight:600;color:var(--ink);padding:0 6px 6px;text-align:center;}
 .rail-role{font-size:11px;color:var(--muted);padding:8px 6px 12px;letter-spacing:.04em;}
 .nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
 .nav li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);
@@ -73,7 +74,7 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 
 /* bildirim zili paneli (dropdown) */
 .bellwrap{position:relative;}
-.bell-pop{position:absolute;top:34px;right:0;width:300px;background:var(--panel);
+.bell-pop{position:absolute;top:34px;right:0;width:300px;max-height:70vh;overflow-y:auto;background:var(--panel);
       border:1px solid var(--line);border-radius:8px;padding:8px;display:none;z-index:30;}
 .bellwrap.open .bell-pop{display:block;}
 .bell-pop .bp-head{font-size:12px;color:var(--muted);padding:6px 8px;}
@@ -110,7 +111,7 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .trend-chart{height:200px;display:flex;align-items:flex-end;gap:2px;padding:8px;
       border:1px solid var(--line-soft);border-radius:var(--radius);}
 .trend-bar-col{flex:1;height:100%;display:flex;align-items:flex-end;}
-.trend-bar{width:100%;min-height:2px;background:var(--bar-dark);border-radius:2px 2px 0 0;}
+.trend-bar{width:100%;min-height:2px;background:var(--brand-primary, var(--bar-dark));border-radius:2px 2px 0 0;}
 
 /* tablo (generic) */
 .tbl{width:100%;}
@@ -146,6 +147,7 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 
 /* hata metni (paylaşılan) */
 .error-text{font-size:12px;color:#b3261e;}
+.success-text{font-size:12px;color:#1e7b34;}
 
 /* Stok Yöneticisi panosu — ürün tablosu kolonları */
 .stock-row{grid-template-columns:2fr 1fr .7fr .7fr .8fr .8fr .7fr;}
@@ -157,6 +159,11 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .modal{width:440px;max-width:100%;max-height:85vh;background:var(--panel);border:1px solid var(--line);
       border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
 .modal.lg{width:640px;}
+/* Bazı modallar (ör. POS iade/PIN) head/body/foot'u bir <form> ile sarmalıyor — form varsayılan
+   display:block olduğu için .modal'ın flex-column zincirini kırıyor, .modal-body'nin flex/scroll
+   sınırlaması etkisiz kalıyor (içerik scrollbar olmadan modalın dışına taşıyor). Form'u şeffaf bir
+   flex geçişi haline getirip zinciri tamir ediyoruz. */
+.modal > form{display:flex;flex-direction:column;flex:1;min-height:0;}
 .modal-head{padding:16px 20px;border-bottom:1px solid var(--line-soft);font-size:15px;flex-shrink:0;}
 .modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0;}
 .modal-foot{padding:14px 20px;border-top:1px solid var(--line-soft);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;}

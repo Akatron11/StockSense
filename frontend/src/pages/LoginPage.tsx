@@ -71,9 +71,7 @@ export function LoginPage() {
             ) : (
               <div className="login-logo">LOGO</div>
             )}
-            <div className="login-appname" style={branding?.primary_color ? { color: branding.primary_color } : undefined}>
-              {branding?.display_name ?? "StockSense"}
-            </div>
+            <div className="login-appname">{branding?.display_name ?? "StockSense"}</div>
           </div>
 
           <div className="login-field">

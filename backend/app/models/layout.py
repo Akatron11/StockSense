@@ -52,3 +52,23 @@ class LayoutZone(Base, TimestampMixin, UpdatedAtMixin):
     height: Mapped[int] = mapped_column(Integer, nullable=False)
 
     branch: Mapped["Branch"] = relationship()
+
+
+class StockZone(Base, TimestampMixin, UpdatedAtMixin):
+    """Stock Manager'ın kendi şubesi için stok alanının fiziksel düzenini görselleştirmek üzere
+    oluşturduğu isimli bölge — LayoutZone'dan bilinçli olarak bağımsız (madde/karar: 2026-08-10,
+    kullanıcıyla brainstorming). Mağaza reyon/planogram planından (LayoutZone, Seller Manager'ın
+    co-occurrence/Apriori önerisiyle ilişkili) tamamen ayrı bir amaç — ürün ataması yok, sadece
+    saf zone editörü (ad + konum + boyut)."""
+
+    __tablename__ = "stock_zones"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    x: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    y: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    branch: Mapped["Branch"] = relationship()

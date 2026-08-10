@@ -30,3 +30,8 @@ class ProductRead(ProductBase):
 
     id: int
     is_active: bool
+
+
+class ProductListOut(BaseModel):
+    items: list[ProductRead]
+    total: int

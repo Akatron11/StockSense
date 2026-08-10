@@ -8,6 +8,7 @@ import { ProductCatalogPage } from "./pages/ProductCatalogPage";
 import { StockManagerDashboard } from "./pages/StockManagerDashboard";
 import { PriceManagementPage } from "./pages/PriceManagementPage";
 import { StockRequestPage } from "./pages/StockRequestPage";
+import { StockAreaLayoutPage } from "./pages/StockAreaLayoutPage";
 import { LayoutSuggestionPage } from "./pages/LayoutSuggestionPage";
 import { ReportsDetailPage } from "./pages/ReportsDetailPage";
 import { EmployeeManagementPage } from "./pages/EmployeeManagementPage";
@@ -58,6 +59,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <StockRequestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stock-layout"
+            element={
+              <ProtectedRoute>
+                <StockAreaLayoutPage />
               </ProtectedRoute>
             }
           />

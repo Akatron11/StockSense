@@ -31,6 +31,7 @@
     "branchOperations": "Şube operasyonu",
     "stockList": "Stok listesi",
     "stockRequest": "Merkez depo talebi",
+    "stockAreaLayout": "Stok alanı planı",
     "priceManagement": "Fiyat yönetimi",
     "layoutSuggestion": "Layout önerisi",
     "regionDetail": "Bölge detayı",
@@ -103,6 +104,7 @@
     "lastSaleCompleted": "Son satış tamamlandı — toplam {{total}}",
     "completeSale": "Satışı tamamla",
     "returnExchange": "İade / Değişim",
+    "returnCompleted": "İade onaylandı ve tamamlandı",
     "payModalTitle": "Ödeme — satışı tamamla",
     "paymentMethod": "Ödeme yöntemi",
     "cash": "Nakit",
@@ -174,6 +176,10 @@
     "loadError": "Ürün kataloğu alınamadı.",
     "title": "Ürünler",
     "searchPlaceholder": "Ara: ürün / SKU",
+    "searchButton": "Ara",
+    "prev": "◄ Önceki",
+    "next": "Sonraki ►",
+    "pageIndicator": "{{from}}–{{to}} / {{total}}",
     "newProduct": "Yeni ürün",
     "colProduct": "Ürün",
     "colSku": "SKU",
@@ -270,6 +276,22 @@
     "loadError": "Zone listesi yüklenemedi.",
     "scoreUnavailable": "Simülasyon için önce ürünleri zone'lara atayın"
   },
+  "stockZone": {
+    "scopeDesc": "Kapsam: kendi şubesi · stok alanının fiziksel düzeni (satış/planogram kararıyla ilgisi yok)",
+    "planTitle": "Stok alanı planı",
+    "emptyState": "Henüz bir stok alanı planı oluşturmadınız.",
+    "addZone": "Zone ekle",
+    "colName": "Zone adı",
+    "colAction": "İşlem",
+    "createTitle": "Yeni zone",
+    "editTitle": "Zone düzenle",
+    "nameLabel": "Zone adı",
+    "widthLabel": "Genişlik",
+    "heightLabel": "Yükseklik",
+    "invalidForm": "Zone adı ve boyutları geçerli olmalı.",
+    "saveFailed": "Kaydedilemedi.",
+    "loadError": "Zone listesi yüklenemedi."
+  },
   "stockManager": {
     "scopeDesc": "Kapsam: kendi şubesi",
     "scopeDescMulti": "Kapsam: seçili şube",
@@ -303,6 +325,7 @@
     "start": "Başlangıç",
     "end": "Bitiş",
     "off": "off",
+    "timeRequired": "Başlangıç ve bitiş saatini (AM/PM dahil) girin.",
     "dayLabels": ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
   },
   "vendor": {

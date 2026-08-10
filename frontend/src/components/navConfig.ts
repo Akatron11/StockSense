@@ -63,7 +63,15 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
       items: [{ label: "nav.stock", path: "/stock" }, { label: "nav.price", path: "/price" }, { label: "nav.layout" }],
     },
   ],
-  stock_manager: [{ items: [{ label: "nav.stockList", path: "/" }, { label: "nav.stockRequest", path: "/stock-request" }] }],
+  stock_manager: [
+    {
+      items: [
+        { label: "nav.stockList", path: "/" },
+        { label: "nav.stockRequest", path: "/stock-request" },
+        { label: "nav.stockAreaLayout", path: "/stock-layout" },
+      ],
+    },
+  ],
   seller_manager: [
     {
       items: [

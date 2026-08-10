@@ -61,6 +61,7 @@ export function CashierPos() {
   const [returnPin, setReturnPin] = useState("");
   const [pinSubmitting, setPinSubmitting] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [returnJustCompleted, setReturnJustCompleted] = useState(false);
 
   useEffect(() => {
     // AppShell hiç mount olmadığı için (kasiyer doğrudan /pos'a yönlenir) marka rengi/logo burada
@@ -75,8 +76,8 @@ export function CashierPos() {
 
   useEffect(() => {
     if (!token) return;
-    listProducts(token)
-      .then(setCatalog)
+    listProducts(token, { limit: 50 })
+      .then((res) => setCatalog(res.items))
       .catch(() => setCatalogError(t("pos.catalogLoadError")));
   }, [token]);
 
@@ -226,6 +227,7 @@ export function CashierPos() {
       setPinModalOpen(false);
       setReturnPin("");
       setPendingReturnId(null);
+      setReturnJustCompleted(true);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setPinError(t("pos.pinInvalid"));
@@ -377,10 +379,15 @@ export function CashierPos() {
             <button className="btn primary" disabled={cart.length === 0} onClick={() => setPayModalOpen(true)}>
               {t("pos.completeSale")}
             </button>
-            <button className="btn ghost" onClick={() => setReturnModalOpen(true)}>
+            <button className="btn ghost" onClick={() => { setReturnJustCompleted(false); setReturnModalOpen(true); }}>
               {t("pos.returnExchange")}
             </button>
           </div>
+          {returnJustCompleted && (
+            <div className="success-text" style={{ marginTop: 10 }}>
+              {t("pos.returnCompleted")}
+            </div>
+          )}
         </aside>
       </div>
 

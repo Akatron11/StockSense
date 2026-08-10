@@ -10,6 +10,11 @@ export interface ProductRead {
   is_active: boolean;
 }
 
+export interface ProductListOut {
+  items: ProductRead[];
+  total: number;
+}
+
 export interface ProductCreatePayload {
   name: string;
   sku: string;

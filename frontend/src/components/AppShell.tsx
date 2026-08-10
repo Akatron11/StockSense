@@ -26,6 +26,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationsOut | null>(null);
   const [notifError, setNotifError] = useState<string | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
       .then((b) => {
         applyBrandColor(b.primary_color);
         setLogoUrl(b.logo_url);
+        setBrandName(b.display_name);
       })
       .catch(() => applyBrandColor(null));
   }, []);
@@ -75,6 +77,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
         <div className={`logo${logoUrl ? " has-image" : ""}`}>
           {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-img" /> : "LOGO"}
         </div>
+        {brandName && <div className="brand-name">{brandName}</div>}
         <div className="rail-role">{roleText}</div>
 
         {navGroups.map((group, groupIndex) => (

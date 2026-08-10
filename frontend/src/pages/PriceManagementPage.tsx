@@ -45,10 +45,10 @@ export function PriceManagementPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [products, stock] = await Promise.all([listProducts(token), listStock(token, branchId)]);
+      const [productList, stock] = await Promise.all([listProducts(token, { limit: 50 }), listStock(token, branchId)]);
       const stockByProduct = new Map<number, StockItem>(stock.map((s) => [s.product_id, s]));
       setRows(
-        products.map((p: ProductRead) => {
+        productList.items.map((p: ProductRead) => {
           const s = stockByProduct.get(p.id);
           return {
             product_id: p.id,

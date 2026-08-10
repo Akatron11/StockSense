@@ -34,6 +34,26 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   return body as T;
 }
 
+// Backend hata gövdesindeki `detail` alanı iki farklı şekilde gelebilir: elle raise edilen
+// HTTPException'larda düz string, Pydantic'in otomatik doğrulama hatalarında (422) ise
+// {msg, loc, ...} objelerinden oluşan bir dizi — ikincisini doğrudan bir string state'ine
+// atayıp render etmeye çalışmak "Objects are not valid as a React child" ile çöker (bkz.
+// ShiftCalendarPage'deki AM/PM'siz saat girişi bug'ı, 2026-08-10).
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof ApiError)) return fallback;
+  const body = err.body;
+  if (typeof body !== "object" || body === null || !("detail" in body)) return fallback;
+  const detail = (body as { detail?: unknown }).detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((d) => (typeof d === "object" && d !== null && "msg" in d ? String((d as { msg: unknown }).msg) : null))
+      .filter((m): m is string => m !== null);
+    if (messages.length > 0) return messages.join("; ");
+  }
+  return fallback;
+}
+
 export function authFetch<T>(token: string, path: string, options: RequestInit = {}): Promise<T> {
   return apiFetch<T>(path, {
     ...options,

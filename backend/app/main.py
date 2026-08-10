@@ -16,6 +16,7 @@ from .routers import (
     shifts,
     stock,
     stock_requests,
+    stock_zones,
 )
 
 app = FastAPI(title="StockSense API")
@@ -39,6 +40,7 @@ app.include_router(notifications.router)
 app.include_router(reports.router)
 app.include_router(layout_suggestion.router)
 app.include_router(layout_zones.router)
+app.include_router(stock_zones.router)
 app.include_router(shifts.router)
 app.include_router(employees.router)
 app.include_router(org.router)

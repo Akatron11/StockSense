@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { assignShift, listRoster, listWeekShifts } from "../api/shifts";
-import { ApiError } from "../api/client";
+import { apiErrorMessage } from "../api/client";
 import type { RosterEmployee, ShiftItem, ShiftUpsertPayload } from "../types/shift";
 
 // d.toISOString() UTC'ye çevirir — yerel saat UTC'den ileriyse (örn. TR, UTC+3) tarihi bir gün
@@ -102,6 +102,13 @@ export function ShiftCalendarPage() {
 
   async function handleSave() {
     if (!token || !cellForm) return;
+    // Tarayıcı 12 saatlik (AM/PM) yerel ayarlarında <input type="time"> yalnızca AM/PM de
+    // seçilirse geçerli bir değer üretiyor — aksi halde value boş string kalıyor (backend'e
+    // ":00" gibi geçersiz bir saat gitmesini önlemek için burada kontrol ediliyor).
+    if (!cellForm.isDayOff && (!cellForm.startTime || !cellForm.endTime)) {
+      setSaveError(t("shifts.timeRequired"));
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -115,12 +122,7 @@ export function ShiftCalendarPage() {
       setCellForm(null);
       await load();
     } catch (err) {
-      if (err instanceof ApiError) {
-        const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
-      } else {
-        setSaveError(t("common.saveFailed"));
-      }
+      setSaveError(apiErrorMessage(err, t("common.saveFailed")));
     } finally {
       setSaving(false);
     }

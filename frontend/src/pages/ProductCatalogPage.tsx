@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
@@ -15,6 +15,8 @@ interface ProductFormState {
   cost_price: string;
   best_before_date: string;
 }
+
+const PAGE_SIZE = 50;
 
 const EMPTY_FORM: ProductFormState = {
   name: "",
@@ -43,9 +45,12 @@ export function ProductCatalogPage() {
   const { token } = useAuth();
 
   const [products, setProducts] = useState<ProductRead[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
 
   const [editing, setEditing] = useState<ProductRead | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,7 +63,9 @@ export function ProductCatalogPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      setProducts(await listProducts(token));
+      const res = await listProducts(token, { q: appliedQuery || undefined, page, limit: PAGE_SIZE });
+      setProducts(res.items);
+      setTotal(res.total);
     } catch {
       setLoadError(t("catalog.loadError"));
     } finally {
@@ -69,13 +76,17 @@ export function ProductCatalogPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, page, appliedQuery]);
 
-  const filtered = products.filter((p) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
-  });
+  function handleSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    setAppliedQuery(searchInput.trim());
+  }
+
+  const rangeFrom = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeTo = Math.min(page * PAGE_SIZE, total);
+  const hasNextPage = page * PAGE_SIZE < total;
 
   function openCreate() {
     setEditing(null);
@@ -126,13 +137,18 @@ export function ProductCatalogPage() {
         <div className="panel-head">
           {t("catalog.title")}
           <span className="filters">
-            <input
-              className="input"
-              style={{ height: 34 }}
-              placeholder={t("catalog.searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 6 }}>
+              <input
+                className="input"
+                style={{ height: 34 }}
+                placeholder={t("catalog.searchPlaceholder")}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <button className="btn sm ghost" type="submit">
+                {t("catalog.searchButton")}
+              </button>
+            </form>
             <button className="btn sm primary" onClick={openCreate}>
               {t("catalog.newProduct")}
             </button>
@@ -152,12 +168,12 @@ export function ProductCatalogPage() {
                 <span>{t("catalog.colCost")}</span>
                 <span />
               </div>
-              {filtered.length === 0 && (
+              {products.length === 0 && (
                 <div className="muted-small" style={{ padding: "12px 0" }}>
                   {t("common.noRecords")}
                 </div>
               )}
-              {filtered.map((product) => (
+              {products.map((product) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr .7fr" }} key={product.id}>
                   <span>{product.name}</span>
                   <span className="muted-small">{product.sku}</span>
@@ -169,6 +185,19 @@ export function ProductCatalogPage() {
                   </button>
                 </div>
               ))}
+              {total > 0 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+                  <button className="btn sm ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                    {t("catalog.prev")}
+                  </button>
+                  <span className="muted-small">
+                    {t("catalog.pageIndicator", { from: rangeFrom, to: rangeTo, total })}
+                  </span>
+                  <button className="btn sm ghost" disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
+                    {t("catalog.next")}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

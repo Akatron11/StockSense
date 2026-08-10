@@ -5,7 +5,7 @@ import { roleLabel } from "../auth/roleLabels";
 import { AppShell } from "../components/AppShell";
 import { createEmployee, listEmployees, updateEmployee } from "../api/employees";
 import { listBranches, listRegions } from "../api/org";
-import { ApiError } from "../api/client";
+import { apiErrorMessage } from "../api/client";
 import type { EmployeeOut } from "../types/employee";
 import type { BranchOut, RegionOut } from "../types/org";
 
@@ -160,12 +160,7 @@ export function EmployeeManagementPage() {
       setModalOpen(false);
       await load();
     } catch (err) {
-      if (err instanceof ApiError) {
-        const detail = typeof err.body === "object" && err.body !== null ? (err.body as { detail?: string }).detail : null;
-        setSaveError(detail ?? t("common.saveFailedWithStatus", { status: err.status }));
-      } else {
-        setSaveError(t("common.saveFailed"));
-      }
+      setSaveError(apiErrorMessage(err, t("common.saveFailed")));
     } finally {
       setSaving(false);
     }

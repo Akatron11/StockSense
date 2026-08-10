@@ -31,6 +31,7 @@
     "branchOperations": "Branch operations",
     "stockList": "Stock list",
     "stockRequest": "Central warehouse request",
+    "stockAreaLayout": "Stock area layout",
     "priceManagement": "Price management",
     "layoutSuggestion": "Layout suggestion",
     "regionDetail": "Region detail",
@@ -103,6 +104,7 @@
     "lastSaleCompleted": "Last sale completed — total {{total}}",
     "completeSale": "Complete sale",
     "returnExchange": "Return / Exchange",
+    "returnCompleted": "Return approved and completed",
     "payModalTitle": "Payment — complete sale",
     "paymentMethod": "Payment method",
     "cash": "Cash",
@@ -174,6 +176,10 @@
     "loadError": "Could not load the product catalog.",
     "title": "Products",
     "searchPlaceholder": "Search: product / SKU",
+    "searchButton": "Search",
+    "prev": "◄ Previous",
+    "next": "Next ►",
+    "pageIndicator": "{{from}}–{{to}} / {{total}}",
     "newProduct": "New product",
     "colProduct": "Product",
     "colSku": "SKU",
@@ -270,6 +276,22 @@
     "loadError": "Could not load the zone list.",
     "scoreUnavailable": "Assign products to zones to see a layout score"
   },
+  "stockZone": {
+    "scopeDesc": "Scope: own branch · physical layout of the stock area (unrelated to the sales/planogram decision)",
+    "planTitle": "Stock area layout",
+    "emptyState": "You haven't created a stock area layout yet.",
+    "addZone": "Add zone",
+    "colName": "Zone name",
+    "colAction": "Action",
+    "createTitle": "New zone",
+    "editTitle": "Edit zone",
+    "nameLabel": "Zone name",
+    "widthLabel": "Width",
+    "heightLabel": "Height",
+    "invalidForm": "Zone name and dimensions must be valid.",
+    "saveFailed": "Could not be saved.",
+    "loadError": "Could not load the zone list."
+  },
   "stockManager": {
     "scopeDesc": "Scope: own branch",
     "scopeDescMulti": "Scope: selected branch",
@@ -303,6 +325,7 @@
     "start": "Start",
     "end": "End",
     "off": "off",
+    "timeRequired": "Enter both start and end time (including AM/PM).",
     "dayLabels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
   "vendor": {
