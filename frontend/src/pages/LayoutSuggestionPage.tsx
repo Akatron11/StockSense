@@ -5,7 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { homeLabelForRole } from "../components/navConfig";
 import { getLayoutSuggestion, applyLayoutSuggestion } from "../api/layoutSuggestion";
 import { listLayoutZones, updateLayoutZone } from "../api/layoutZones";
-import { StorePlanCanvas, type OverlayLine, type ZonePosition } from "../components/StorePlanCanvas";
+import { StorePlanCanvas, type OverlayLine, type ZonePosition, type ZoneSize } from "../components/StorePlanCanvas";
 import { ZoneEditorForm } from "../components/ZoneEditorForm";
 import { ApiError } from "../api/client";
 import type { LayoutSuggestionOut } from "../types/layoutSuggestion";
@@ -30,6 +30,7 @@ export function LayoutSuggestionPage() {
   const [zones, setZones] = useState<LayoutZoneOut[]>([]);
   const [zonesLoading, setZonesLoading] = useState(true);
   const [positions, setPositions] = useState<Record<number, ZonePosition>>({});
+  const [sizes, setSizes] = useState<Record<number, ZoneSize>>({});
   const [editingZone, setEditingZone] = useState<LayoutZoneOut | "new" | null>(null);
   const [zoneError, setZoneError] = useState<string | null>(null);
   const [zoneLoadError, setZoneLoadError] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export function LayoutSuggestionPage() {
         const zoneList = await listLayoutZones(token);
         setZones(zoneList);
         setPositions(Object.fromEntries(zoneList.map((z) => [z.id, { x: z.x, y: z.y }])));
+        setSizes(Object.fromEntries(zoneList.map((z) => [z.id, { width: z.width, height: z.height }])));
       } catch {
         setZoneLoadError(t("layoutZone.loadError"));
       } finally {
@@ -73,7 +75,14 @@ export function LayoutSuggestionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  const canvasZones = useMemo(() => zones.map((z) => ({ id: z.id, name: z.name, width: z.width, height: z.height })), [zones]);
+  const canvasZones = useMemo(
+    () =>
+      zones.map((z) => {
+        const size = sizes[z.id] ?? { width: z.width, height: z.height };
+        return { id: z.id, name: z.name, width: size.width, height: size.height };
+      }),
+    [zones, sizes],
+  );
 
   const overlayLines: OverlayLine[] = useMemo(
     () =>
@@ -106,12 +115,24 @@ export function LayoutSuggestionPage() {
     }
   }
 
+  async function handleResizeEnd(zoneId: number, width: number, height: number) {
+    if (simulating || !token) return;
+    try {
+      await updateLayoutZone(token, zoneId, { width, height });
+      setZones((zs) => zs.map((z) => (z.id === zoneId ? { ...z, width, height } : z)));
+    } catch {
+      setZoneError(t("layoutZone.saveFailed"));
+      await load();
+    }
+  }
+
   function handleToggleSimulation() {
     if (!simulating) {
       setBaselineScore(liveScore);
       setSimulating(true);
     } else {
       setPositions(Object.fromEntries(zones.map((z) => [z.id, { x: z.x, y: z.y }])));
+      setSizes(Object.fromEntries(zones.map((z) => [z.id, { width: z.width, height: z.height }])));
       setSimulating(false);
       setBaselineScore(null);
     }
@@ -121,11 +142,21 @@ export function LayoutSuggestionPage() {
     if (!token) return;
     const changed = zones.filter((z) => {
       const pos = positions[z.id];
-      return pos && (pos.x !== z.x || pos.y !== z.y);
+      const size = sizes[z.id];
+      return (pos && (pos.x !== z.x || pos.y !== z.y)) || (size && (size.width !== z.width || size.height !== z.height));
     });
     setZoneError(null);
     try {
-      await Promise.all(changed.map((z) => updateLayoutZone(token, z.id, { x: positions[z.id].x, y: positions[z.id].y })));
+      await Promise.all(
+        changed.map((z) =>
+          updateLayoutZone(token, z.id, {
+            x: positions[z.id]?.x ?? z.x,
+            y: positions[z.id]?.y ?? z.y,
+            width: sizes[z.id]?.width ?? z.width,
+            height: sizes[z.id]?.height ?? z.height,
+          }),
+        ),
+      );
       setSimulating(false);
       setBaselineScore(null);
       await load();
@@ -207,6 +238,10 @@ export function LayoutSuggestionPage() {
                 positions={positions}
                 onPositionsChange={setPositions}
                 onDragEnd={handleDragEnd}
+                onResizeEnd={(zoneId, width, height) => {
+                  setSizes((prev) => ({ ...prev, [zoneId]: { width, height } }));
+                  handleResizeEnd(zoneId, width, height);
+                }}
                 overlayLines={overlayLines}
                 onScoreChange={setLiveScore}
               />
