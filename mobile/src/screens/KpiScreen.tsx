@@ -1,4 +1,4 @@
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Button, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSalesReport } from "../hooks/useSalesReport";
 
 export function KpiScreen() {
@@ -16,6 +16,7 @@ export function KpiScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>{error}</Text>
+        <Button title="Tekrar dene" onPress={reload} />
       </View>
     );
   }

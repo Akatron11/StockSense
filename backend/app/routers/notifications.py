@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,20 @@ router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 # stocksense-api-tr.md'de gün sayısı belirtilmemişti — implementasyon sırasında karar verildi
 # (2026-07-27): SKT'ye 7 gün ya da daha az kalan ürünler "yaklaşan" sayılır.
 EXPIRING_WITHIN_DAYS = 7
+
+
+KIND_TO_PRIMARY_ROLE = {"low_stock": "stock_manager", "expiring": "seller_manager"}
+
+
+def _verify_notification_target(db: Session, claims: dict, kind: str, product_id: int, branch_id: int) -> None:
+    allowed_branches = target_branches(db, claims, KIND_TO_PRIMARY_ROLE[kind])
+    if branch_id not in allowed_branches:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    exists = db.scalar(
+        select(Stock.product_id).where(Stock.product_id == product_id, Stock.branch_id == branch_id)
+    )
+    if exists is None:
+        raise HTTPException(status_code=404, detail="Notification not found")
 
 
 def _read_keys(db: Session, employee_id: int, kind: str) -> set[tuple[int, int]]:
@@ -91,6 +105,7 @@ def mark_notification_read(
     claims: dict = Depends(get_current_claims),
     db: Session = Depends(get_db),
 ):
+    _verify_notification_target(db, claims, payload.kind, payload.product_id, payload.branch_id)
     employee_id = claims["user_id"]
     existing = db.scalar(
         select(NotificationRead).where(

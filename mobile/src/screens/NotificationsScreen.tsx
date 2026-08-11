@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Button, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { apiErrorMessage } from "../api/client";
 import { getNotifications, markNotificationRead } from "../api/notifications";
@@ -75,6 +75,7 @@ export function NotificationsScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.error}>{error}</Text>
+        <Button title="Tekrar dene" onPress={load} />
       </View>
     );
   }
