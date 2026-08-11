@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims
-from ..models import Product, Stock
-from ..schemas.notification import ExpiringItem, LowStockItem, NotificationsOut
+from ..models import NotificationRead, Product, Stock
+from ..schemas.notification import ExpiringItem, LowStockItem, NotificationReadIn, NotificationsOut
 from ..services.notification_targets import target_branches
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
@@ -17,13 +17,24 @@ router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 EXPIRING_WITHIN_DAYS = 7
 
 
+def _read_keys(db: Session, employee_id: int, kind: str) -> set[tuple[int, int]]:
+    rows = db.execute(
+        select(NotificationRead.product_id, NotificationRead.branch_id).where(
+            NotificationRead.employee_id == employee_id, NotificationRead.kind == kind
+        )
+    ).all()
+    return {(product_id, branch_id) for product_id, branch_id in rows}
+
+
 @router.get("", response_model=NotificationsOut)
 def get_notifications(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
     low_stock_branches = target_branches(db, claims, "stock_manager")
     expiring_branches = target_branches(db, claims, "seller_manager")
+    employee_id = claims["user_id"]
 
     low_stock = []
     if low_stock_branches:
+        read_keys = _read_keys(db, employee_id, "low_stock")
         rows = db.execute(
             select(Stock, Product.name)
             .join(Product, Product.id == Stock.product_id)
@@ -40,12 +51,14 @@ def get_notifications(claims: dict = Depends(get_current_claims), db: Session = 
                 branch_id=stock.branch_id,
                 quantity=stock.quantity,
                 threshold=stock.low_stock_threshold,
+                is_read=(stock.product_id, stock.branch_id) in read_keys,
             )
             for stock, name in rows
         ]
 
     expiring = []
     if expiring_branches:
+        read_keys = _read_keys(db, employee_id, "expiring")
         cutoff = date.today() + timedelta(days=EXPIRING_WITHIN_DAYS)
         rows = db.execute(
             select(Stock, Product.name, Product.best_before_date)
@@ -60,9 +73,40 @@ def get_notifications(claims: dict = Depends(get_current_claims), db: Session = 
         ).all()
         expiring = [
             ExpiringItem(
-                product_id=stock.product_id, product_name=name, branch_id=stock.branch_id, best_before_date=bbd
+                product_id=stock.product_id,
+                product_name=name,
+                branch_id=stock.branch_id,
+                best_before_date=bbd,
+                is_read=(stock.product_id, stock.branch_id) in read_keys,
             )
             for stock, name, bbd in rows
         ]
 
     return NotificationsOut(low_stock=low_stock, expiring=expiring)
+
+
+@router.post("/read", status_code=204)
+def mark_notification_read(
+    payload: NotificationReadIn,
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    employee_id = claims["user_id"]
+    existing = db.scalar(
+        select(NotificationRead).where(
+            NotificationRead.employee_id == employee_id,
+            NotificationRead.kind == payload.kind,
+            NotificationRead.product_id == payload.product_id,
+            NotificationRead.branch_id == payload.branch_id,
+        )
+    )
+    if existing is None:
+        db.add(
+            NotificationRead(
+                employee_id=employee_id,
+                kind=payload.kind,
+                product_id=payload.product_id,
+                branch_id=payload.branch_id,
+            )
+        )
+        db.commit()
