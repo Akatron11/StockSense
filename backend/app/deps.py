@@ -15,11 +15,9 @@ bearer_scheme = HTTPBearer()
 VENDOR_ADMIN_SUBDOMAIN = "admin"
 
 
-def get_company_from_host(host: str | None = Header(default=None), db: Session = Depends(get_db)) -> Company | None:
-    """Madde 16 — Host header'daki subdomain'i company_id'ye çözer (`sub.stocksense.com` -> `sub`).
-
-    `VENDOR_ADMIN_SUBDOMAIN` için None döner (tenant-üstü vendor_manager girişi, login bu durumu ayrıca ele alır).
-    """
+def resolve_company_from_host(host: str | None, db: Session) -> Company | None:
+    """Host header'daki subdomain'i company_id'ye çözer — get_company_from_host'un ve login'in
+    ortak çekirdek mantığı. VENDOR_ADMIN_SUBDOMAIN için None döner."""
     if host is None:
         raise HTTPException(status_code=400, detail="Host header is required")
     subdomain = host.split(".")[0].split(":")[0]
@@ -29,6 +27,14 @@ def get_company_from_host(host: str | None = Header(default=None), db: Session =
     if company is None:
         raise HTTPException(status_code=404, detail="Unknown company subdomain")
     return company
+
+
+def get_company_from_host(host: str | None = Header(default=None), db: Session = Depends(get_db)) -> Company | None:
+    """Madde 16 — Host header'daki subdomain'i company_id'ye çözer (`sub.stocksense.com` -> `sub`).
+
+    `VENDOR_ADMIN_SUBDOMAIN` için None döner (tenant-üstü vendor_manager girişi, login bu durumu ayrıca ele alır).
+    """
+    return resolve_company_from_host(host, db)
 
 
 def get_current_claims(creds: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:

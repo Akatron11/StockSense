@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class LoginRequest(BaseModel):
     username: str
     password: str
+    subdomain: str | None = None
 
 
 class UserOut(BaseModel):

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import get_company_from_host, get_current_claims
+from ..deps import get_company_from_host, get_current_claims, resolve_company_from_host
 from ..models import Company, CompanyBranding, Employee
 from ..schemas.auth import LoginRequest, TokenResponse, UserOut
 from ..schemas.company import BrandingOut
@@ -27,9 +27,21 @@ def get_login_branding(company: Company | None = Depends(get_company_from_host),
 @router.post("/login", response_model=TokenResponse)
 def login(
     payload: LoginRequest,
-    company: Company | None = Depends(get_company_from_host),
+    host: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
+    # Mobil native client'lar Host header'ını web gibi güvenilir şekilde set edemeyebilir —
+    # bu yüzden login body'sinde bir subdomain verildiyse Host header hiç okunmuyor/çözümlenmiyor
+    # (company bir FastAPI Depends'i değil, koşullu olarak burada çözülüyor — bu sayede body'deki
+    # subdomain her zaman önceliklidir ve Host'un erken-patlama davranışına hiç girilmez).
+    # Bkz. docs/superpowers/specs/2026-08-11-mobile-companion-app-design.md.
+    if payload.subdomain is not None:
+        company = db.scalar(select(Company).where(Company.subdomain == payload.subdomain.strip().lower()))
+        if company is None:
+            raise HTTPException(status_code=404, detail="Unknown company subdomain")
+    else:
+        company = resolve_company_from_host(host, db)
+
     if company is None:
         # admin subdomain — tenant-üstü vendor_manager girişi (madde 16).
         employee = db.scalar(
