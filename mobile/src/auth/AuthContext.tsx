@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import * as SecureStore from "expo-secure-store";
 import type { UserOut } from "../types/auth";
 import { me } from "../api/auth";
+import { setUnauthorizedHandler } from "../api/client";
 
 const TOKEN_STORAGE_KEY = "stocksense_token";
 
@@ -37,6 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
   }, []);
 
   async function setSession(newToken: string, newUser: UserOut) {
