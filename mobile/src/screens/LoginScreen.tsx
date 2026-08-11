@@ -16,7 +16,12 @@ export function LoginScreen() {
     setError(null);
     setLoading(true);
     try {
-      const result = await login({ subdomain: subdomain.trim(), username: username.trim(), password });
+      const trimmedSubdomain = subdomain.trim();
+      const result = await login({
+        ...(trimmedSubdomain ? { subdomain: trimmedSubdomain } : {}),
+        username: username.trim(),
+        password,
+      });
       await setSession(result.access_token, result.user);
     } catch (err) {
       setError(apiErrorMessage(err, "Giriş başarısız — bilgileri kontrol edin"));

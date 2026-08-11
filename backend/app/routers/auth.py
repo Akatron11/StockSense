@@ -36,7 +36,7 @@ def login(
     # subdomain her zaman önceliklidir ve Host'un erken-patlama davranışına hiç girilmez).
     # Bkz. docs/superpowers/specs/2026-08-11-mobile-companion-app-design.md.
     if payload.subdomain is not None:
-        company = db.scalar(select(Company).where(Company.subdomain == payload.subdomain))
+        company = db.scalar(select(Company).where(Company.subdomain == payload.subdomain.strip().lower()))
         if company is None:
             raise HTTPException(status_code=404, detail="Unknown company subdomain")
     else:
