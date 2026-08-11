@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims
-from ..models import Branch, LayoutZone, Product, Region, Stock
+from ..models import Branch, LayoutZone, NotificationRead, Product, Region, Stock
 from ..schemas.stock import StockOut, StockUpdate
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
@@ -131,6 +131,15 @@ def update_stock(
 
     for field, value in fields.items():
         setattr(stock_row, field, value)
+
+    if ("quantity" in fields or "low_stock_threshold" in fields) and stock_row.quantity > stock_row.low_stock_threshold:
+        db.execute(
+            delete(NotificationRead).where(
+                NotificationRead.kind == "low_stock",
+                NotificationRead.product_id == product_id,
+                NotificationRead.branch_id == branch.id,
+            )
+        )
 
     db.commit()
     db.refresh(stock_row)
