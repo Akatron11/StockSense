@@ -9,3 +9,5 @@ python-jose[cryptography]
 pandas
 mlxtend>=0.25
 httpx
+openpyxl
+python-multipart
