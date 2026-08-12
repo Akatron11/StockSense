@@ -9,6 +9,8 @@ export interface ListProductsParams {
   q?: string;
   page?: number;
   limit?: number;
+  sortBy?: "name" | "sku" | "default_price" | "cost_price";
+  sortDir?: "asc" | "desc";
 }
 
 export function listProducts(token: string, params: ListProductsParams = {}): Promise<ProductListOut> {
@@ -16,6 +18,8 @@ export function listProducts(token: string, params: ListProductsParams = {}): Pr
   if (params.q) search.set("q", params.q);
   if (params.page) search.set("page", String(params.page));
   if (params.limit) search.set("limit", String(params.limit));
+  if (params.sortBy) search.set("sort_by", params.sortBy);
+  if (params.sortDir) search.set("sort_dir", params.sortDir);
   const qs = search.toString();
   return authFetch<ProductListOut>(token, `/api/products${qs ? `?${qs}` : ""}`);
 }

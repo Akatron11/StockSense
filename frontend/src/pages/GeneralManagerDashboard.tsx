@@ -37,7 +37,9 @@ export function GeneralManagerDashboard() {
   return (
     <AppShell pageTitle={activeLabel}>
       <div className="toolbar">
-        <div className="scope">{t("reports.scope", { label: report?.scope_label ?? "..." })}</div>
+        <div className="scope">
+          {t("reports.scope", { label: report?.scope === "company" ? t("reports.companyWide") : report?.scope_label ?? "..." })}
+        </div>
         <RangeSelector value={days} onChange={setDays} />
       </div>
 

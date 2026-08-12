@@ -12,6 +12,18 @@ export interface StockItem {
   effective_price: number;
 }
 
+// backend/app/schemas/stock.py::BranchStockOut ile birebir eşleşir (Faz 3 "quantity takibi").
+// region_id/region_name sadece general_manager'da (company scope) dolu gelir.
+export interface BranchStockItem {
+  branch_id: number;
+  branch_name: string;
+  region_id: number | null;
+  region_name: string | null;
+  quantity: number;
+  low_stock_threshold: number;
+  effective_price: number;
+}
+
 export interface StockUpdatePayload {
   quantity?: number;
   low_stock_threshold?: number;

@@ -5,6 +5,7 @@ import { login, getLoginBranding } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { applyBrandColor } from "../theme/brandColor";
+import { BrandMark } from "../components/BrandMark";
 import type { BrandingOut } from "../types/company";
 import "../styles/login.css";
 
@@ -69,7 +70,9 @@ export function LoginPage() {
             {branding?.logo_url ? (
               <img src={branding.logo_url} alt={branding.display_name} className="login-logo-img" />
             ) : (
-              <div className="login-logo">LOGO</div>
+              <div className="login-logo">
+                <BrandMark size={40} />
+              </div>
             )}
             <div className="login-appname">{branding?.display_name ?? "StockSense"}</div>
           </div>

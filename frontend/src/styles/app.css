@@ -3,9 +3,13 @@
   --ink:#3a3a3a; --muted:#9a9a9a; --line:#cfcfcf; --line-soft:#e2e2e2;
   --bar:#e0e0e0; --bar-dark:#d0d0d0; --page:#fafafa; --panel:#ffffff; --rail:#f1f1f1;
   --radius:6px; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* StockSense'in kendi ürün kimliği (2026-08-11, kullanıcı onaylı "Konsept A") — bir şirket kendi
+     primary_color'ını set etmediği sürece geçerli varsayılan; theme/brandColor.ts::applyBrandColor
+     bir şirket rengi geldiğinde bunu inline stil olarak override eder (inline > stylesheet önceliği). */
+  --brand-primary:#2563eb; --brand-primary-fg:#ffffff;
 }
 *{box-sizing:border-box;}
-body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);overflow-x:hidden;}
 
 /* React entegrasyonu için gerçek veriyle kullanılan küçük yardımcılar (wireframe'de yoktu, statikti) */
 .muted-small{font-size:11px;color:var(--muted);}
@@ -20,10 +24,10 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 /* ---- ORTAK KABUK ---- */
 .app{display:flex;min-height:100vh;}
 .rail{width:300px;background:var(--rail);border-right:1px solid var(--line);
-      display:flex;flex-direction:column;padding:14px 6px;}
+      display:flex;flex-direction:column;padding:14px 6px;
+      position:sticky;top:0;height:100vh;overflow-y:auto;}
 .logo{display:flex;align-items:center;justify-content:center;margin-bottom:6px;min-height:180px;}
-.logo:not(.has-image){height:180px;width:100%;border:1px dashed var(--line);border-radius:var(--radius);
-      justify-content:center;color:var(--muted);font-size:12px;letter-spacing:.12em;}
+.logo:not(.has-image){height:180px;width:100%;justify-content:center;}
 .logo-img{max-width:100%;max-height:180px;width:auto;height:auto;object-fit:contain;}
 .brand-name{font-size:17px;font-weight:600;color:var(--ink);padding:0 6px 6px;text-align:center;}
 .rail-role{font-size:11px;color:var(--muted);padding:8px 6px 12px;letter-spacing:.04em;}
@@ -31,7 +35,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .nav li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);
         font-size:14px;color:var(--ink);cursor:default;}
 .nav-link{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;width:100%;}
-.nav li .ic{width:16px;height:16px;border:1px solid var(--line);border-radius:3px;flex:none;}
+.nav li .ic{width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.nav li.active .ic{color:inherit;}
 .nav li.active{background:#e4e4e4;border:1px solid var(--line);
   border-left:3px solid var(--brand-primary, var(--line));color:var(--brand-primary, var(--ink));}
 .nav .go{margin-top:6px;border:1px dashed var(--line);justify-content:center;}
@@ -47,7 +52,7 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;}
 .topbar{height:56px;border-bottom:1px solid var(--line);background:var(--panel);
         display:flex;align-items:center;justify-content:space-between;padding:0 22px;}
-.crumb{font-size:15px;}
+.crumb{font-size:18px;font-weight:700;}
 .topbar-right{display:flex;align-items:center;gap:16px;}
 .bell{position:relative;width:26px;height:26px;border:1px solid var(--line);border-radius:5px;cursor:pointer;
       display:flex;align-items:center;justify-content:center;color:var(--muted);}
@@ -67,6 +72,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .um-head{display:flex;flex-direction:column;gap:6px;padding:6px 8px 8px;}
 .um-div{height:1px;background:var(--line-soft);margin:4px 0;}
 .um-row{display:flex;align-items:center;justify-content:space-between;padding:9px 8px;font-size:13px;}
+.um-row-label{display:flex;align-items:center;gap:8px;color:var(--muted);}
+.um-row-label svg{flex:none;}
 .um-lang{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:11px;}
 .um-lang span{padding:4px 9px;color:var(--muted);}
 .um-lang .on{background:#e4e4e4;color:var(--ink);}
@@ -81,9 +88,16 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
 .bell-item{display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-top:1px solid var(--line-soft);}
 .bell-item .tag{font-size:10px;color:var(--muted);}
 
+/* döviz çevirici paneli (dropdown) — bell-pop ile aynı desen (Faz 3, 2026-08-11) */
+.currencywrap{position:relative;}
+.currency-pop{position:absolute;top:34px;right:0;width:220px;background:var(--panel);
+      border:1px solid var(--line);border-radius:8px;padding:12px;display:none;
+      flex-direction:column;gap:10px;z-index:30;}
+.currencywrap.open .currency-pop{display:flex;}
+
 /* ---- İÇERİK ---- */
 .content{padding:22px;display:flex;flex-direction:column;gap:18px;}
-.page-title{font-size:18px;font-weight:500;}
+.page-title{font-size:22px;font-weight:700;}
 .scope{font-size:12px;color:var(--muted);}
 .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
 .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
@@ -100,7 +114,7 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
         display:flex;flex-direction:column;}
 .pad{padding:16px;}
 .panel-head{padding:13px 16px;border-bottom:1px solid var(--line-soft);
-      font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+      font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
 .panel-head .hint{font-size:11px;color:var(--muted);}
 .panel-body{padding:16px;}
 
@@ -108,15 +122,22 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
       display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;}
 
 /* satış trendi — basit CSS bar-chart (chartbox yer tutucusunun gerçek veriyle dolan hali) */
-.trend-chart{height:200px;display:flex;align-items:flex-end;gap:2px;padding:8px;
+.trend-chart-body{display:flex;gap:8px;}
+.trend-y-axis{display:flex;flex-direction:column;justify-content:space-between;
+      font-size:10px;color:var(--muted);padding:8px 0;white-space:nowrap;}
+.trend-chart{height:200px;flex:1;display:flex;align-items:flex-end;gap:2px;padding:8px;
       border:1px solid var(--line-soft);border-radius:var(--radius);}
 .trend-bar-col{flex:1;height:100%;display:flex;align-items:flex-end;}
 .trend-bar{width:100%;min-height:2px;background:var(--brand-primary, var(--bar-dark));border-radius:2px 2px 0 0;}
+.trend-x-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);
+      padding:4px 8px 0 calc(8px + 46px);}
 
 /* tablo (generic) */
 .tbl{width:100%;}
 .thead,.trow{display:grid;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line-soft);}
 .thead{font-size:11px;color:var(--muted);letter-spacing:.04em;}
+.th-sortable{cursor:pointer;user-select:none;}
+.th-sortable:hover{color:var(--ink);}
 .trow:last-child{border-bottom:none;}
 
 /* liste öğesi */
@@ -164,8 +185,8 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--page);}
    sınırlaması etkisiz kalıyor (içerik scrollbar olmadan modalın dışına taşıyor). Form'u şeffaf bir
    flex geçişi haline getirip zinciri tamir ediyoruz. */
 .modal > form{display:flex;flex-direction:column;flex:1;min-height:0;}
-.modal-head{padding:16px 20px;border-bottom:1px solid var(--line-soft);font-size:15px;flex-shrink:0;}
-.modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex:1;min-height:0;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line-soft);font-size:16px;font-weight:700;flex-shrink:0;}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;}
 .modal-foot{padding:14px 20px;border-top:1px solid var(--line-soft);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;}
 .kv{display:flex;justify-content:space-between;font-size:13px;}
 .hintbox{font-size:11px;color:var(--muted);line-height:1.6;background:var(--rail);

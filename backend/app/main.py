@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import (
     auth,
     companies,
+    currency,
     employees,
     layout_suggestion,
     layout_zones,
@@ -45,6 +46,7 @@ app.include_router(shifts.router)
 app.include_router(employees.router)
 app.include_router(org.router)
 app.include_router(companies.router)
+app.include_router(currency.router)
 
 
 @app.get("/api/health")

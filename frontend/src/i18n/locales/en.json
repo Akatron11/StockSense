@@ -21,12 +21,18 @@
     "system": "System",
     "language": "Dil / Language",
     "logout": "Log out",
-    "logoAlt": "Logo"
+    "logoAlt": "Logo",
+    "currency": "Currency",
+    "currencyAmountLabel": "Amount (₺)",
+    "currencyTargetLabel": "Currency",
+    "currencyResultLabel": "Converted",
+    "currencyAsOf": "rate as of {{date}}",
+    "currencyLoadError": "Could not load exchange rates."
   },
   "nav": {
     "home": "Home",
     "salesReports": "Sales reports",
-    "profitKpi": "Profit margin / KPI",
+    "salesReportsKpi": "Sales reports / KPI",
     "accountManagement": "Account management",
     "branchOperations": "Branch operations",
     "stockList": "Stock list",
@@ -55,6 +61,7 @@
     "noRecords": "No records.",
     "edit": "Edit",
     "cancel": "Cancel",
+    "close": "Close",
     "save": "Save",
     "saving": "Saving...",
     "active": "active",
@@ -180,6 +187,7 @@
     "prev": "◄ Previous",
     "next": "Next ►",
     "pageIndicator": "{{from}}–{{to}} / {{total}}",
+    "pageSizeLabel": "Per page",
     "newProduct": "New product",
     "colProduct": "Product",
     "colSku": "SKU",
@@ -314,7 +322,25 @@
     "product": "Product",
     "quantityLabel": "Stock quantity",
     "thresholdLabel": "Low-stock threshold",
-    "hint": "The threshold is configured per product; a notification is sent to the relevant role once stock drops below it."
+    "hint": "The threshold is configured per product; a notification is sent to the relevant role once stock drops below it.",
+    "branchesButton": "Branches",
+    "branchBreakdownTitle": "{{product}} — branch breakdown",
+    "branchBreakdownLoadError": "Could not load the branch breakdown.",
+    "colBranch": "Branch",
+    "regionGroupLabel": "{{region}} — total {{total}} units"
+  },
+  "productSales": {
+    "title": "{{product}} — sales tracking",
+    "loadError": "Could not load sales data.",
+    "granularity": {
+      "week": "Weekly",
+      "month": "Monthly",
+      "year": "Yearly"
+    },
+    "revenueChart": "Sales amount",
+    "quantityChart": "Units sold",
+    "breakdownTitle": "{{label}} breakdown",
+    "colQuantity": "Units sold"
   },
   "shifts": {
     "scopeDesc": "All staff at the branch (with or without login) — click a cell to assign a shift or a day off",
@@ -380,6 +406,8 @@
     "reportLoadError": "Could not load the report.",
     "dashboardLoadError": "Could not load dashboard data.",
     "defaultScope": "own branch",
+    "companyWide": "Company-wide",
+    "quantityUnit": "units",
     "sellerSalesCard": "Sales",
     "expiringDiscountCard": "Pending expiry / discount",
     "opsWorkingCard": "Staff on shift today",

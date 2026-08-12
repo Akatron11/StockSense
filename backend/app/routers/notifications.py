@@ -82,6 +82,7 @@ def get_notifications(claims: dict = Depends(get_current_claims), db: Session = 
                 Stock.quantity > 0,
                 Product.is_active.is_(True),
                 Product.best_before_date.is_not(None),
+                Product.best_before_date >= date.today(),
                 Product.best_before_date <= cutoff,
             )
         ).all()

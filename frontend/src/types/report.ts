@@ -40,3 +40,29 @@ export interface SalesReportOut {
   least_selling: TopProductItem[];
   never_sold: NeverSoldItem[];
 }
+
+// backend/app/schemas/report.py::ProductSalesOut ile birebir eşleşir (Faz 3 "satış takibi").
+export type ProductSalesGranularity = "week" | "month" | "year";
+
+export interface ProductSalesTrendPoint {
+  period: string;
+  quantity: number;
+  revenue: number;
+}
+
+export interface ProductSalesBreakdownItem {
+  id: number;
+  label: string;
+  quantity: number;
+  revenue: number;
+}
+
+export interface ProductSalesOut {
+  product_id: number;
+  product_name: string;
+  scope: "branch" | "region" | "company";
+  scope_label: string;
+  granularity: ProductSalesGranularity;
+  trend: ProductSalesTrendPoint[];
+  breakdown: ProductSalesBreakdownItem[];
+}

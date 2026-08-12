@@ -10,30 +10,49 @@ from ..schemas.product import ProductCreate, ProductListOut, ProductRead, Produc
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
+SORTABLE_COLUMNS = {
+    "name": Product.name,
+    "sku": Product.sku,
+    "default_price": Product.default_price,
+    "cost_price": Product.cost_price,
+}
+
+
 @router.get("", response_model=ProductListOut)
 def list_products(
     q: str | None = None,
     page: int = 1,
     limit: int = 50,
+    sort_by: str = "name",
+    sort_dir: str = "asc",
     claims: dict = Depends(get_current_claims),
     db: Session = Depends(get_db),
 ):
     """Sayfa başı max `limit` ürün döner (varsayılan 50) — 700-1000 ürünlük büyük kataloglarda
     tek seferde tüm listeyi indirmemek için (bkz. PROCESS.md, 2026-08-10). `q` verilirse isim/SKU'da
     kısmi eşleşme uygulanır (arama da server-side, aksi halde büyük katalogda arama sadece o anki
-    sayfayla sınırlı kalırdı)."""
+    sayfayla sınırlı kalırdı). `sort_by`/`sort_dir` — ürün listesinde alanlara göre sıralama (PROCESS.md,
+    Faz 2), sayfalama server-side olduğu için sıralama da server-side yapılmalı (aksi halde sadece o anki
+    sayfa içinde sıralanmış görünürdü)."""
     if page < 1:
         raise HTTPException(status_code=422, detail="page 1 veya üzeri olmalı")
     if limit < 1 or limit > 200:
         raise HTTPException(status_code=422, detail="limit 1-200 aralığında olmalı")
+    if sort_by not in SORTABLE_COLUMNS:
+        raise HTTPException(status_code=422, detail=f"sort_by şu değerlerden biri olmalı: {sorted(SORTABLE_COLUMNS)}")
+    if sort_dir not in ("asc", "desc"):
+        raise HTTPException(status_code=422, detail="sort_dir 'asc' ya da 'desc' olmalı")
 
     filters = [Product.company_id == claims["company_id"], Product.is_active.is_(True)]
     if q:
         filters.append(or_(Product.name.ilike(f"%{q}%"), Product.sku.ilike(f"%{q}%")))
 
+    column = SORTABLE_COLUMNS[sort_by]
+    order = column.asc() if sort_dir == "asc" else column.desc()
+
     total = db.scalar(select(func.count()).select_from(Product).where(*filters))
     items = db.scalars(
-        select(Product).where(*filters).order_by(Product.name).offset((page - 1) * limit).limit(limit)
+        select(Product).where(*filters).order_by(order).offset((page - 1) * limit).limit(limit)
     ).all()
     return ProductListOut(items=items, total=total or 0)
 

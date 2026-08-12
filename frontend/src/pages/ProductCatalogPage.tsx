@@ -4,8 +4,13 @@ import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
 import { listProducts, createProduct, updateProduct } from "../api/products";
 import { ApiError } from "../api/client";
+import { ProductSalesModal } from "../components/ProductSalesModal";
 import type { ProductRead } from "../types/product";
 import { formatCurrency } from "../utils/currency";
+
+// backend/app/routers/reports.py::PRODUCT_SALES_ROLES ile birebir eşleşir (Faz 3 "satış takibi",
+// PROCESS.md 2026-08-11) — sadece bu 3 rol ürün adına tıklayınca satış popup'ını görebilir.
+const PRODUCT_SALES_ROLES = new Set(["branch_manager", "region_manager", "general_manager"]);
 
 interface ProductFormState {
   name: string;
@@ -16,7 +21,9 @@ interface ProductFormState {
   best_before_date: string;
 }
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
+type SortColumn = "name" | "sku" | "default_price" | "cost_price";
 
 const EMPTY_FORM: ProductFormState = {
   name: "",
@@ -42,11 +49,15 @@ function toFormState(product: ProductRead): ProductFormState {
 // zaten 403 ile koruyor). Backend'de tam CRUD hazırdı, burada sadece frontend eklendi.
 export function ProductCatalogPage() {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const canViewSales = user ? PRODUCT_SALES_ROLES.has(user.role) : false;
 
   const [products, setProducts] = useState<ProductRead[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[2]);
+  const [sortBy, setSortBy] = useState<SortColumn>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
@@ -58,12 +69,20 @@ export function ProductCatalogPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [salesViewFor, setSalesViewFor] = useState<ProductRead | null>(null);
+
   async function load() {
     if (!token) return;
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await listProducts(token, { q: appliedQuery || undefined, page, limit: PAGE_SIZE });
+      const res = await listProducts(token, {
+        q: appliedQuery || undefined,
+        page,
+        limit: pageSize,
+        sortBy,
+        sortDir,
+      });
       setProducts(res.items);
       setTotal(res.total);
     } catch {
@@ -76,7 +95,7 @@ export function ProductCatalogPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page, appliedQuery]);
+  }, [token, page, pageSize, sortBy, sortDir, appliedQuery]);
 
   function handleSearchSubmit(e: FormEvent) {
     e.preventDefault();
@@ -84,9 +103,24 @@ export function ProductCatalogPage() {
     setAppliedQuery(searchInput.trim());
   }
 
-  const rangeFrom = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const rangeTo = Math.min(page * PAGE_SIZE, total);
-  const hasNextPage = page * PAGE_SIZE < total;
+  function handleSort(column: SortColumn) {
+    setPage(1);
+    if (column === sortBy) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortDir("asc");
+    }
+  }
+
+  function sortIndicator(column: SortColumn) {
+    if (column !== sortBy) return "";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  }
+
+  const rangeFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeTo = Math.min(page * pageSize, total);
+  const hasNextPage = page * pageSize < total;
 
   function openCreate() {
     setEditing(null);
@@ -161,11 +195,23 @@ export function ProductCatalogPage() {
           ) : (
             <>
               <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr .7fr" }}>
-                <span>{t("catalog.colProduct")}</span>
-                <span>{t("catalog.colSku")}</span>
+                <span className="th-sortable" onClick={() => handleSort("name")}>
+                  {t("catalog.colProduct")}
+                  {sortIndicator("name")}
+                </span>
+                <span className="th-sortable" onClick={() => handleSort("sku")}>
+                  {t("catalog.colSku")}
+                  {sortIndicator("sku")}
+                </span>
                 <span>{t("catalog.colCategory")}</span>
-                <span>{t("catalog.colSalePrice")}</span>
-                <span>{t("catalog.colCost")}</span>
+                <span className="th-sortable" onClick={() => handleSort("default_price")}>
+                  {t("catalog.colSalePrice")}
+                  {sortIndicator("default_price")}
+                </span>
+                <span className="th-sortable" onClick={() => handleSort("cost_price")}>
+                  {t("catalog.colCost")}
+                  {sortIndicator("cost_price")}
+                </span>
                 <span />
               </div>
               {products.length === 0 && (
@@ -175,7 +221,15 @@ export function ProductCatalogPage() {
               )}
               {products.map((product) => (
                 <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr .7fr" }} key={product.id}>
-                  <span>{product.name}</span>
+                  <span>
+                    {canViewSales ? (
+                      <button className="breadcrumb-link" onClick={() => setSalesViewFor(product)}>
+                        {product.name}
+                      </button>
+                    ) : (
+                      product.name
+                    )}
+                  </span>
                   <span className="muted-small">{product.sku}</span>
                   <span>{product.category ?? "—"}</span>
                   <span>{formatCurrency(product.default_price)}</span>
@@ -190,8 +244,26 @@ export function ProductCatalogPage() {
                   <button className="btn sm ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                     {t("catalog.prev")}
                   </button>
-                  <span className="muted-small">
+                  <span className="muted-small" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {t("catalog.pageIndicator", { from: rangeFrom, to: rangeTo, total })}
+                    <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {t("catalog.pageSizeLabel")}
+                      <select
+                        className="input"
+                        style={{ height: 28, width: "auto" }}
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPage(1);
+                          setPageSize(Number(e.target.value));
+                        }}
+                      >
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </span>
                   <button className="btn sm ghost" disabled={!hasNextPage} onClick={() => setPage((p) => p + 1)}>
                     {t("catalog.next")}
@@ -274,6 +346,14 @@ export function ProductCatalogPage() {
           </div>
         </div>
       </div>
+
+      {salesViewFor && (
+        <ProductSalesModal
+          productId={salesViewFor.id}
+          productName={salesViewFor.name}
+          onClose={() => setSalesViewFor(null)}
+        />
+      )}
     </AppShell>
   );
 }

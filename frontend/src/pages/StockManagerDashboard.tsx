@@ -2,14 +2,19 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
-import { listStock, updateStock } from "../api/stock";
+import { listStock, listStockByProduct, updateStock } from "../api/stock";
 import { ApiError } from "../api/client";
 import { useBranchScope } from "../hooks/useBranchScope";
-import type { StockItem } from "../types/stock";
+import { ProductSalesModal } from "../components/ProductSalesModal";
+import type { BranchStockItem, StockItem } from "../types/stock";
 import { formatCurrency } from "../utils/currency";
 
 // backend/app/routers/notifications.py::EXPIRING_WITHIN_DAYS ile aynı eşik (madde 11/UC-12).
 const EXPIRING_WITHIN_DAYS = 7;
+
+// backend/app/routers/stock.py::QUANTITY_TRACKING_ROLES ile birebir eşleşir (Faz 3 "quantity takibi",
+// PROCESS.md 2026-08-11) — stock_manager zaten tek şubeli, bu görünüme ihtiyacı yok.
+const QUANTITY_TRACKING_ROLES = new Set(["branch_manager", "region_manager", "general_manager"]);
 
 // prototype/stok-manager-dashboard.html'in React karşılığı — Stok Yöneticisi'nin "Ana sayfa"sı zaten şube stok
 // listesinin kendisi (ayrı bir rapor/KPI backend'i gerekmiyor, mevcut GET/PATCH /api/stock yeterli).
@@ -21,17 +26,27 @@ export function StockManagerDashboard() {
   const { token, user } = useAuth();
   const activeLabel = t("nav.stockList");
   const { needsSelector, branches, branchId, setBranchId } = useBranchScope(user?.role, token);
+  const canViewBranches = user ? QUANTITY_TRACKING_ROLES.has(user.role) : false;
 
   const [items, setItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "sku" | "status">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const [editing, setEditing] = useState<StockItem | null>(null);
   const [quantityInput, setQuantityInput] = useState("");
   const [thresholdInput, setThresholdInput] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [salesViewFor, setSalesViewFor] = useState<StockItem | null>(null);
+
+  const [branchBreakdownFor, setBranchBreakdownFor] = useState<StockItem | null>(null);
+  const [branchBreakdown, setBranchBreakdown] = useState<BranchStockItem[]>([]);
+  const [branchBreakdownLoading, setBranchBreakdownLoading] = useState(false);
+  const [branchBreakdownError, setBranchBreakdownError] = useState<string | null>(null);
 
   async function load() {
     if (!token) return;
@@ -52,11 +67,44 @@ export function StockManagerDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, branchId]);
 
-  const filtered = items.filter((item) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return item.product_name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q);
-  });
+  const filtered = items
+    .filter((item) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return item.product_name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "name") cmp = a.product_name.localeCompare(b.product_name);
+      else if (sortBy === "sku") cmp = a.sku.localeCompare(b.sku);
+      else cmp = a.quantity - a.low_stock_threshold - (b.quantity - b.low_stock_threshold);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  function handleSort(column: "name" | "sku" | "status") {
+    if (column === sortBy) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortDir("asc");
+    }
+  }
+
+  function sortIndicator(column: "name" | "sku" | "status") {
+    if (column !== sortBy) return "";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  }
+
+  // Bölge bazlı gruplama (2026-08-12, kullanıcı isteği) — sadece general_manager'ın company scope'unda
+  // region_name dolu geliyor (backend), diğer rollerde her satırın region_name'i null, tek grup olarak kalır.
+  const branchBreakdownByRegion = new Map<string, BranchStockItem[]>();
+  for (const row of branchBreakdown) {
+    const key = row.region_name ?? "";
+    const group = branchBreakdownByRegion.get(key);
+    if (group) group.push(row);
+    else branchBreakdownByRegion.set(key, [row]);
+  }
+  const hasRegionGroups = [...branchBreakdownByRegion.keys()].some((key) => key !== "");
 
   const lowStockCount = items.filter((item) => item.quantity < item.low_stock_threshold).length;
   const expiringCount = items.filter((item) => {
@@ -64,6 +112,21 @@ export function StockManagerDashboard() {
     const days = (new Date(item.best_before_date).getTime() - Date.now()) / 86_400_000;
     return days >= 0 && days <= EXPIRING_WITHIN_DAYS;
   }).length;
+
+  async function openBranchBreakdown(item: StockItem) {
+    if (!token) return;
+    setBranchBreakdownFor(item);
+    setBranchBreakdown([]);
+    setBranchBreakdownError(null);
+    setBranchBreakdownLoading(true);
+    try {
+      setBranchBreakdown(await listStockByProduct(token, item.product_id));
+    } catch {
+      setBranchBreakdownError(t("stockManager.branchBreakdownLoadError"));
+    } finally {
+      setBranchBreakdownLoading(false);
+    }
+  }
 
   function openEdit(item: StockItem) {
     setEditing(item);
@@ -151,12 +214,21 @@ export function StockManagerDashboard() {
           ) : (
             <>
               <div className="thead stock-row">
-                <span>{t("stockManager.colProduct")}</span>
-                <span>{t("stockManager.colSku")}</span>
+                <span className="th-sortable" onClick={() => handleSort("name")}>
+                  {t("stockManager.colProduct")}
+                  {sortIndicator("name")}
+                </span>
+                <span className="th-sortable" onClick={() => handleSort("sku")}>
+                  {t("stockManager.colSku")}
+                  {sortIndicator("sku")}
+                </span>
                 <span>{t("stockManager.colStock")}</span>
                 <span>{t("stockManager.colThreshold")}</span>
                 <span>{t("stockManager.colPrice")}</span>
-                <span>{t("stockManager.colStatus")}</span>
+                <span className="th-sortable" onClick={() => handleSort("status")}>
+                  {t("stockManager.colStatus")}
+                  {sortIndicator("status")}
+                </span>
                 <span />
               </div>
               {filtered.length === 0 && (
@@ -168,15 +240,30 @@ export function StockManagerDashboard() {
                 const low = item.quantity < item.low_stock_threshold;
                 return (
                   <div className="trow stock-row" key={item.product_id}>
-                    <span>{item.product_name}</span>
+                    <span>
+                      {canViewBranches ? (
+                        <button className="breadcrumb-link" onClick={() => setSalesViewFor(item)}>
+                          {item.product_name}
+                        </button>
+                      ) : (
+                        item.product_name
+                      )}
+                    </span>
                     <span className="muted-small">{item.sku}</span>
                     <span>{item.quantity}</span>
                     <span>{item.low_stock_threshold}</span>
                     <span>{formatCurrency(item.effective_price)}</span>
                     <span className="pill">{low ? t("stockManager.low") : t("stockManager.sufficient")}</span>
-                    <button className="btn sm ghost" onClick={() => openEdit(item)}>
-                      {t("common.edit")}
-                    </button>
+                    <span style={{ display: "flex", gap: 6 }}>
+                      {canViewBranches && (
+                        <button className="btn sm ghost" onClick={() => openBranchBreakdown(item)}>
+                          {t("stockManager.branchesButton")}
+                        </button>
+                      )}
+                      <button className="btn sm ghost" onClick={() => openEdit(item)}>
+                        {t("common.edit")}
+                      </button>
+                    </span>
                   </div>
                 );
               })}
@@ -230,6 +317,65 @@ export function StockManagerDashboard() {
           </div>
         </div>
       </div>
+
+      <div className={`overlay${branchBreakdownFor ? " open" : ""}`}>
+        <div className="modal">
+          <div className="modal-head">
+            {t("stockManager.branchBreakdownTitle", { product: branchBreakdownFor?.product_name ?? "" })}
+          </div>
+          <div className="modal-body">
+            {branchBreakdownError && <div className="error-text">{branchBreakdownError}</div>}
+            {branchBreakdownLoading ? (
+              <div className="muted-small">{t("common.loading")}</div>
+            ) : (
+              <>
+                <div className="thead" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }}>
+                  <span>{t("stockManager.colBranch")}</span>
+                  <span>{t("stockManager.colStock")}</span>
+                  <span>{t("stockManager.colThreshold")}</span>
+                  <span>{t("stockManager.colStatus")}</span>
+                </div>
+                {[...branchBreakdownByRegion.entries()].map(([regionName, rows]) => (
+                  <div key={regionName || "—"}>
+                    {hasRegionGroups && (
+                      <div className="nav-group">
+                        {t("stockManager.regionGroupLabel", {
+                          region: regionName,
+                          total: rows.reduce((sum, r) => sum + r.quantity, 0),
+                        })}
+                      </div>
+                    )}
+                    {rows.map((row) => {
+                      const low = row.quantity < row.low_stock_threshold;
+                      return (
+                        <div className="trow" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }} key={row.branch_id}>
+                          <span>{row.branch_name}</span>
+                          <span>{row.quantity}</span>
+                          <span>{row.low_stock_threshold}</span>
+                          <span className="pill">{low ? t("stockManager.low") : t("stockManager.sufficient")}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+          <div className="modal-foot">
+            <button className="btn ghost" onClick={() => setBranchBreakdownFor(null)}>
+              {t("common.close")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {salesViewFor && (
+        <ProductSalesModal
+          productId={salesViewFor.product_id}
+          productName={salesViewFor.product_name}
+          onClose={() => setSalesViewFor(null)}
+        />
+      )}
     </AppShell>
   );
 }

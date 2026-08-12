@@ -61,7 +61,7 @@ export function ReportsDetailPage() {
     getSalesReport(token, days, effectiveBranchId, effectiveRegionId)
       .then((data) => {
         setReport(data);
-        if (drillPath.length === 0) setRootLabel(data.scope_label);
+        if (drillPath.length === 0) setRootLabel(data.scope === "company" ? t("reports.companyWide") : data.scope_label);
       })
       .catch(() => setError(t("reports.reportLoadError")))
       .finally(() => setLoading(false));
@@ -96,7 +96,9 @@ export function ReportsDetailPage() {
               ))}
             </span>
           ) : (
-            t("reports.scope", { label: report?.scope_label ?? t("reports.defaultScope") })
+            t("reports.scope", {
+              label: report?.scope === "company" ? t("reports.companyWide") : report?.scope_label ?? t("reports.defaultScope"),
+            })
           )}
         </div>
         <RangeSelector value={days} onChange={setDays} />
@@ -177,7 +179,7 @@ export function ReportsDetailPage() {
                     <span className="rank">{idx + 1}</span>
                     <div className="txt">
                       <span>{p.product_name}</span>
-                      <span className="muted-small">{p.quantity} adet · {formatCurrency(p.revenue)}</span>
+                      <span className="muted-small">{p.quantity} {t("reports.quantityUnit")} · {formatCurrency(p.revenue)}</span>
                     </div>
                   </div>
                 ))}
@@ -193,7 +195,7 @@ export function ReportsDetailPage() {
                     <span className="rank">{idx + 1}</span>
                     <div className="txt">
                       <span>{p.product_name}</span>
-                      <span className="muted-small">{p.quantity} adet · {formatCurrency(p.revenue)}</span>
+                      <span className="muted-small">{p.quantity} {t("reports.quantityUnit")} · {formatCurrency(p.revenue)}</span>
                     </div>
                   </div>
                 ))}

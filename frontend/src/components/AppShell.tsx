@@ -5,15 +5,23 @@ import { useAuth } from "../auth/AuthContext";
 import { roleLabel } from "../auth/roleLabels";
 import { navForRole } from "./navConfig";
 import { Avatar } from "./Avatar";
+import { Icon } from "./icons";
+import { BrandMark } from "./BrandMark";
 import { getLoginBranding } from "../api/auth";
 import { getNotifications } from "../api/notifications";
+import { getCurrencyRates } from "../api/currency";
 import { applyBrandColor } from "../theme/brandColor";
 import type { NotificationsOut } from "../types/notification";
+import type { CurrencyRatesOut } from "../types/currency";
 
 interface AppShellProps {
   pageTitle: string;
   children: ReactNode;
 }
+
+// Faz 3 "döviz ekranı" (PROCESS.md, 2026-08-11) — quantity/satış takibiyle aynı 3 rol, kullanıcı kararı.
+const CURRENCY_ROLES = new Set(["branch_manager", "region_manager", "general_manager"]);
+const CURRENCY_TARGETS = ["USD", "EUR", "GBP"] as const;
 
 // prototype/app.css'teki ".app/.rail/.topbar" ortak kabuk deseninin React karşılığı.
 // Nav grupları kullanıcının rolüne göre navConfig.ts'ten otomatik çözülür. Aktif öğe artık gerçek
@@ -31,6 +39,14 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   const [notifError, setNotifError] = useState<string | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [rates, setRates] = useState<CurrencyRatesOut | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+  const [amount, setAmount] = useState("100");
+  const [targetCurrency, setTargetCurrency] = useState<(typeof CURRENCY_TARGETS)[number]>("USD");
+  const currencyRef = useRef<HTMLDivElement>(null);
 
   const subdomain = window.location.hostname.split(".")[0];
 
@@ -62,6 +78,9 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) {
+        setCurrencyOpen(false);
+      }
     }
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
@@ -70,12 +89,32 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   const roleText = user ? roleLabel(t, user.role) : "";
   const navGroups = user ? navForRole(user.role) : [];
   const notifCount = notifications ? notifications.low_stock.length + notifications.expiring.length : 0;
+  const canUseCurrency = user ? CURRENCY_ROLES.has(user.role) : false;
+
+  function toggleCurrency() {
+    setCurrencyOpen((v) => {
+      const next = !v;
+      if (next && !rates && !ratesLoading && token) {
+        setRatesLoading(true);
+        setRatesError(null);
+        getCurrencyRates(token)
+          .then(setRates)
+          .catch(() => setRatesError(t("chrome.currencyLoadError")))
+          .finally(() => setRatesLoading(false));
+      }
+      return next;
+    });
+  }
+
+  const parsedAmount = Number(amount.replace(",", "."));
+  const rate = rates?.rates[targetCurrency];
+  const converted = rate !== undefined && !Number.isNaN(parsedAmount) ? parsedAmount * rate : null;
 
   return (
     <div className="app">
       <aside className="rail">
         <div className={`logo${logoUrl ? " has-image" : ""}`}>
-          {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-img" /> : "LOGO"}
+          {logoUrl ? <img src={logoUrl} alt={t("chrome.logoAlt")} className="logo-img" /> : <BrandMark size={56} />}
         </div>
         {brandName && <div className="brand-name">{brandName}</div>}
         <div className="rail-role">{roleText}</div>
@@ -93,11 +132,17 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
                   <li key={item.label} className={className}>
                     {item.path ? (
                       <Link to={item.path} className="nav-link">
-                        <span className="ic" /> {t(item.label)}
+                        <span className="ic">
+                          <Icon name={item.icon} />
+                        </span>{" "}
+                        {t(item.label)}
                       </Link>
                     ) : (
                       <>
-                        <span className="ic" /> {t(item.label)}
+                        <span className="ic">
+                          <Icon name={item.icon} />
+                        </span>{" "}
+                        {t(item.label)}
                       </>
                     )}
                   </li>
@@ -122,6 +167,54 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
           <div className="crumb">{pageTitle}</div>
           <div className="topbar-right">
             <span className="brand-slot">{subdomain}</span>
+
+            {canUseCurrency && (
+              <div className={`currencywrap${currencyOpen ? " open" : ""}`} ref={currencyRef}>
+                <div className="bell" onClick={toggleCurrency} title={t("chrome.currency")}>
+                  <Icon name="currency" />
+                </div>
+                <div className="currency-pop">
+                  <div className="bp-head">{t("chrome.currency")}</div>
+                  {ratesLoading && <div className="muted-small">{t("common.loading")}</div>}
+                  {ratesError && <div className="error-text">{ratesError}</div>}
+                  {rates && (
+                    <>
+                      <div className="field">
+                        <label>{t("chrome.currencyAmountLabel")}</label>
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>{t("chrome.currencyTargetLabel")}</label>
+                        <select
+                          className="input"
+                          value={targetCurrency}
+                          onChange={(e) => setTargetCurrency(e.target.value as (typeof CURRENCY_TARGETS)[number])}
+                        >
+                          {CURRENCY_TARGETS.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="kv">
+                        <span>{t("chrome.currencyResultLabel")}</span>
+                        <span>{converted !== null ? `${converted.toFixed(2)} ${targetCurrency}` : "—"}</span>
+                      </div>
+                      {rates.date && (
+                        <div className="muted-small">{t("chrome.currencyAsOf", { date: rates.date })}</div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className={`bellwrap${bellOpen ? " open" : ""}`} ref={bellRef}>
               <div className={`bell${notifCount > 0 ? " has-notifications" : ""}`} onClick={() => setBellOpen((v) => !v)}>
@@ -165,7 +258,9 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
                 </div>
                 <div className="um-div" />
                 <div className="um-row">
-                  {t("chrome.language")}
+                  <span className="um-row-label">
+                    <Icon name="language" /> {t("chrome.language")}
+                  </span>
                   <span className="um-lang">
                     <span className={i18n.language === "tr" ? "on" : ""} onClick={() => i18n.changeLanguage("tr")} style={{ cursor: "pointer" }}>
                       TR
@@ -178,7 +273,9 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
                 </div>
                 <div className="um-div" />
                 <div className="um-row um-row-clickable" onClick={logout}>
-                  {t("chrome.logout")}
+                  <span className="um-row-label">
+                    <Icon name="logout" /> {t("chrome.logout")}
+                  </span>
                 </div>
               </div>
             </div>

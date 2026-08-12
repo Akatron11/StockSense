@@ -87,7 +87,7 @@ export function BranchManagerDashboard() {
                     <div className="txt">
                       <span>{p.product_name}</span>
                       <span className="muted-small">
-                        {p.quantity} adet · {formatCurrency(p.revenue)}
+                        {p.quantity} {t("reports.quantityUnit")} · {formatCurrency(p.revenue)}
                       </span>
                     </div>
                   </div>

@@ -7,13 +7,33 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims
-from ..models import Branch, Product, Region, Sale, SaleItem, Return, Stock
-from ..schemas.report import BreakdownItem, NeverSoldItem, SalesReportOut, SalesTrendPoint, TopProductItem
+from ..models import Branch, Product, Region, Return, ReturnItem, Sale, SaleItem, Stock
+from ..schemas.report import (
+    BreakdownItem,
+    NeverSoldItem,
+    ProductSalesBreakdownItem,
+    ProductSalesOut,
+    ProductSalesTrendPoint,
+    SalesReportOut,
+    SalesTrendPoint,
+    TopProductItem,
+)
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 ALLOWED_DAYS = {7, 30, 90}
 ROLES_WITH_ACCESS = {"branch_manager", "seller_manager", "region_manager", "general_manager"}
+
+# Faz 3 "satış takibi" (PROCESS.md, 2026-08-11) — quantity takibi'yle tutarlı, sadece bu üç rol
+# (ProductCatalogPage sadece general_manager'da var; StockManagerDashboard üçünde de paylaşılan sayfa).
+PRODUCT_SALES_ROLES = {"branch_manager", "region_manager", "general_manager"}
+
+# Her granularity için kaç periyot gösterilecek + o kadar periyodu garanti kapsayan gün sayısı.
+PRODUCT_SALES_GRANULARITY = {
+    "week": {"count": 12, "lookback_days": 12 * 7 + 7},
+    "month": {"count": 12, "lookback_days": 12 * 31 + 31},
+    "year": {"count": 5, "lookback_days": 5 * 366},
+}
 
 
 def _resolve_scope(
@@ -58,6 +78,166 @@ def _resolve_scope(
         return "company", "Şirket geneli", list(branch_ids)
 
     raise HTTPException(status_code=403, detail="Bu rapora erişim yetkiniz yok")
+
+
+def _period_label(d: date, granularity: str) -> str:
+    if granularity == "week":
+        iso_year, iso_week, _ = d.isocalendar()
+        return f"{iso_year}-W{iso_week:02d}"
+    if granularity == "month":
+        return f"{d.year}-{d.month:02d}"
+    return str(d.year)
+
+
+def _generate_periods(granularity: str, count: int) -> list[str]:
+    """En eskiden en yeniye (bugünü içeren periyot dahil) `count` adet periyot etiketi üretir."""
+    today = date.today()
+    if granularity == "week":
+        start_of_this_week = today - timedelta(days=today.isoweekday() - 1)
+        return [_period_label(start_of_this_week - timedelta(weeks=count - 1 - i), "week") for i in range(count)]
+    if granularity == "month":
+        labels = []
+        for i in range(count - 1, -1, -1):
+            month_index = today.month - 1 - i
+            year = today.year + month_index // 12
+            month = month_index % 12 + 1
+            labels.append(f"{year}-{month:02d}")
+        return labels
+    return [str(today.year - i) for i in range(count - 1, -1, -1)]
+
+
+@router.get("/product-sales/{product_id}", response_model=ProductSalesOut)
+def get_product_sales(
+    product_id: int,
+    granularity: str = Query("week"),
+    branch_id: int | None = Query(default=None),
+    region_id: int | None = Query(default=None),
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    """Faz 3 "satış takibi" (PROCESS.md, 2026-08-11) — bir ürünün adet+tutar satış trendi (haftalık/
+    aylık/yıllık) ve çağıranın yetki alanı içinde bölge/şube kırılımı. İade/değişim net etkisi
+    return_items üzerinden ürün bazlı doğru şekilde hesaplanır (returned düşer, new eklenir) —
+    /reports/sales'teki sale-seviyesi net_amount yaklaşımından farklı, burada ürün granülerliği var.
+    branch_id/region_id — /reports/sales'teki gibi company scope'taki bölge kırılımından bir bölgeye
+    "drill-down" için (2026-08-12, kullanıcı isteğiyle eklendi — ReportsDetailPage'deki aynı desen)."""
+    if claims["role"] not in PRODUCT_SALES_ROLES:
+        raise HTTPException(status_code=403, detail="Bu görünüme erişim yetkiniz yok")
+    if granularity not in PRODUCT_SALES_GRANULARITY:
+        raise HTTPException(
+            status_code=422, detail=f"granularity şu değerlerden biri olmalı: {sorted(PRODUCT_SALES_GRANULARITY)}"
+        )
+
+    product = db.scalar(
+        select(Product).where(Product.id == product_id, Product.company_id == claims["company_id"])
+    )
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    scope, scope_label, branch_ids = _resolve_scope(claims, branch_id, region_id, db)
+
+    cfg = PRODUCT_SALES_GRANULARITY[granularity]
+    start_date = date.today() - timedelta(days=cfg["lookback_days"])
+    periods = _generate_periods(granularity, cfg["count"])
+    period_index = {p: i for i, p in enumerate(periods)}
+
+    trend_quantity = [0] * len(periods)
+    trend_revenue = [0.0] * len(periods)
+    by_branch_quantity: dict[int, int] = defaultdict(int)
+    by_branch_revenue: dict[int, float] = defaultdict(float)
+
+    if branch_ids:
+        item_rows = db.execute(
+            select(SaleItem.quantity, SaleItem.line_total, Sale.branch_id, Sale.sale_date)
+            .join(Sale, SaleItem.sale_id == Sale.id)
+            .where(
+                SaleItem.product_id == product_id,
+                Sale.branch_id.in_(branch_ids),
+                func.date(Sale.sale_date) >= start_date,
+            )
+        ).all()
+        for qty, line_total, branch_id, sale_date in item_rows:
+            label = _period_label(sale_date.date(), granularity)
+            idx = period_index.get(label)
+            if idx is not None:
+                trend_quantity[idx] += qty
+                trend_revenue[idx] += float(line_total)
+            by_branch_quantity[branch_id] += qty
+            by_branch_revenue[branch_id] += float(line_total)
+
+        return_rows = db.execute(
+            select(ReturnItem.quantity, ReturnItem.unit_price, ReturnItem.direction, Sale.branch_id, Sale.sale_date)
+            .join(Return, ReturnItem.return_id == Return.id)
+            .join(Sale, Return.sale_id == Sale.id)
+            .where(
+                ReturnItem.product_id == product_id,
+                Sale.branch_id.in_(branch_ids),
+                Return.status == "completed",
+                func.date(Sale.sale_date) >= start_date,
+            )
+        ).all()
+        for qty, unit_price, direction, branch_id, sale_date in return_rows:
+            sign = -1 if direction == "returned" else 1
+            amount = float(unit_price) * qty
+            label = _period_label(sale_date.date(), granularity)
+            idx = period_index.get(label)
+            if idx is not None:
+                trend_quantity[idx] += sign * qty
+                trend_revenue[idx] += sign * amount
+            by_branch_quantity[branch_id] += sign * qty
+            by_branch_revenue[branch_id] += sign * amount
+
+    trend = [
+        ProductSalesTrendPoint(period=p, quantity=trend_quantity[i], revenue=round(trend_revenue[i], 2))
+        for i, p in enumerate(periods)
+    ]
+
+    breakdown: list[ProductSalesBreakdownItem] = []
+    if scope == "region":
+        branch_names = dict(db.execute(select(Branch.id, Branch.name).where(Branch.id.in_(branch_ids))).all())
+        breakdown = [
+            ProductSalesBreakdownItem(
+                id=bid,
+                label=branch_names[bid],
+                quantity=by_branch_quantity.get(bid, 0),
+                revenue=round(by_branch_revenue.get(bid, 0.0), 2),
+            )
+            for bid in branch_ids
+        ]
+    elif scope == "company":
+        branch_region = dict(
+            db.execute(
+                select(Branch.id, Branch.region_id)
+                .join(Region, Branch.region_id == Region.id)
+                .where(Branch.id.in_(branch_ids))
+            ).all()
+        )
+        region_names = dict(
+            db.execute(select(Region.id, Region.name).where(Region.id.in_(set(branch_region.values())))).all()
+        )
+        region_quantity: dict[int, int] = defaultdict(int)
+        region_revenue: dict[int, float] = defaultdict(float)
+        for bid in branch_ids:
+            rid = branch_region.get(bid)
+            if rid is None:
+                continue
+            region_quantity[rid] += by_branch_quantity.get(bid, 0)
+            region_revenue[rid] += by_branch_revenue.get(bid, 0.0)
+        breakdown = [
+            ProductSalesBreakdownItem(id=rid, label=region_names[rid], quantity=qty, revenue=round(region_revenue[rid], 2))
+            for rid, qty in region_quantity.items()
+        ]
+    breakdown.sort(key=lambda b: b.revenue, reverse=True)
+
+    return ProductSalesOut(
+        product_id=product.id,
+        product_name=product.name,
+        scope=scope,
+        scope_label=scope_label,
+        granularity=granularity,
+        trend=trend,
+        breakdown=breakdown,
+    )
 
 
 @router.get("/sales", response_model=SalesReportOut)

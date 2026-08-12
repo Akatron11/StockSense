@@ -21,12 +21,18 @@
     "system": "Sistem",
     "language": "Dil / Language",
     "logout": "Çıkış",
-    "logoAlt": "Logo"
+    "logoAlt": "Logo",
+    "currency": "Döviz",
+    "currencyAmountLabel": "Tutar (₺)",
+    "currencyTargetLabel": "Döviz",
+    "currencyResultLabel": "Karşılığı",
+    "currencyAsOf": "{{date}} kuru",
+    "currencyLoadError": "Kur bilgisi alınamadı."
   },
   "nav": {
     "home": "Ana sayfa",
     "salesReports": "Satış raporları",
-    "profitKpi": "Kâr marjı / KPI",
+    "salesReportsKpi": "Satış raporları / KPI",
     "accountManagement": "Hesap yönetimi",
     "branchOperations": "Şube operasyonu",
     "stockList": "Stok listesi",
@@ -55,6 +61,7 @@
     "noRecords": "Kayıt yok.",
     "edit": "Düzenle",
     "cancel": "Vazgeç",
+    "close": "Kapat",
     "save": "Kaydet",
     "saving": "Kaydediliyor...",
     "active": "aktif",
@@ -180,6 +187,7 @@
     "prev": "◄ Önceki",
     "next": "Sonraki ►",
     "pageIndicator": "{{from}}–{{to}} / {{total}}",
+    "pageSizeLabel": "Sayfa başına",
     "newProduct": "Yeni ürün",
     "colProduct": "Ürün",
     "colSku": "SKU",
@@ -314,7 +322,25 @@
     "product": "Ürün",
     "quantityLabel": "Stok miktarı",
     "thresholdLabel": "Düşük stok eşiği",
-    "hint": "Eşik ürün bazlı yapılandırılır; stok bu değerin altına düşünce ilgili role bildirim gider."
+    "hint": "Eşik ürün bazlı yapılandırılır; stok bu değerin altına düşünce ilgili role bildirim gider.",
+    "branchesButton": "Şubeler",
+    "branchBreakdownTitle": "{{product}} — şube dağılımı",
+    "branchBreakdownLoadError": "Şube dağılımı alınamadı.",
+    "colBranch": "Şube",
+    "regionGroupLabel": "{{region}} — toplam {{total}} adet"
+  },
+  "productSales": {
+    "title": "{{product}} — satış takibi",
+    "loadError": "Satış verisi alınamadı.",
+    "granularity": {
+      "week": "Haftalık",
+      "month": "Aylık",
+      "year": "Yıllık"
+    },
+    "revenueChart": "Satış tutarı",
+    "quantityChart": "Satılan adet",
+    "breakdownTitle": "{{label}} kırılımı",
+    "colQuantity": "Satılan adet"
   },
   "shifts": {
     "scopeDesc": "Şubedeki tüm personel (login'li + login'siz) — hücreye tıklayınca vardiya/off atanır",
@@ -380,6 +406,8 @@
     "reportLoadError": "Rapor alınamadı.",
     "dashboardLoadError": "Pano verisi alınamadı.",
     "defaultScope": "kendi şubesi",
+    "companyWide": "Şirket geneli",
+    "quantityUnit": "adet",
     "sellerSalesCard": "Satış",
     "expiringDiscountCard": "SKT / indirim bekleyen",
     "opsWorkingCard": "Bugün vardiyadaki personel",

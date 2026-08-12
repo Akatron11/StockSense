@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_claims
 from ..models import Branch, LayoutZone, NotificationRead, Product, Region, Stock
-from ..schemas.stock import StockOut, StockUpdate
+from ..schemas.stock import BranchStockOut, StockOut, StockUpdate
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -77,6 +77,89 @@ def _to_stock_out(stock: Stock, product: Product) -> StockOut:
         best_before_date=product.best_before_date,
         effective_price=stock.price_override if stock.price_override is not None else product.default_price,
     )
+
+
+# PROCESS.md Faz 3 "quantity takibi" (2026-08-11) — sadece bu üç rol, kullanıcının isteğiyle sınırlı
+# (stock_manager zaten tek şubeli, bu view'a ihtiyacı yok; seller_manager /stock sayfasını hiç kullanmıyor).
+QUANTITY_TRACKING_ROLES = {"branch_manager", "region_manager", "general_manager"}
+
+
+def _scope_branch_ids(claims: dict, db: Session) -> list[int]:
+    """reports.py::_resolve_scope ile aynı hiyerarşi mantığı — drill-down parametresi yok, çağıranın
+    tüm yetki alanı (kendi şube/bölge/şirket) döner."""
+    role = claims["role"]
+    if role == "branch_manager":
+        return [claims["branch_id"]]
+    if role == "region_manager":
+        return list(db.scalars(select(Branch.id).where(Branch.region_id == claims["region_id"])).all())
+    return list(
+        db.scalars(
+            select(Branch.id)
+            .join(Region, Branch.region_id == Region.id)
+            .where(Region.company_id == claims["company_id"])
+        ).all()
+    )
+
+
+@router.get("/product/{product_id}/branches", response_model=list[BranchStockOut])
+def list_stock_by_product(
+    product_id: int,
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    """Bir ürünün, çağıranın yetki alanındaki her şubedeki miktarı — Stock satırı hiç yoksa 0/0 olarak
+    gösterilir (upsert kararıyla tutarlı, bkz. update_stock)."""
+    if claims["role"] not in QUANTITY_TRACKING_ROLES:
+        raise HTTPException(status_code=403, detail="Bu görünüme erişim yetkiniz yok")
+
+    product = db.scalar(
+        select(Product).where(Product.id == product_id, Product.company_id == claims["company_id"])
+    )
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    branch_ids = _scope_branch_ids(claims, db)
+    if not branch_ids:
+        return []
+
+    branches = db.execute(select(Branch.id, Branch.name).where(Branch.id.in_(branch_ids))).all()
+    stock_by_branch = {
+        s.branch_id: s
+        for s in db.scalars(
+            select(Stock).where(Stock.product_id == product_id, Stock.branch_id.in_(branch_ids))
+        ).all()
+    }
+
+    # Bölge bazlı gruplama (2026-08-12, kullanıcı isteği) — sadece general_manager'ın company scope'unda
+    # anlamlı; region_manager zaten tek bölgede, branch_manager tek şubede, ikisi için de None kalır.
+    branch_region: dict[int, tuple[int, str]] = {}
+    if claims["role"] == "general_manager":
+        branch_region = {
+            bid: (rid, rname)
+            for bid, rid, rname in db.execute(
+                select(Branch.id, Region.id, Region.name)
+                .join(Region, Branch.region_id == Region.id)
+                .where(Branch.id.in_(branch_ids))
+            ).all()
+        }
+
+    result = []
+    for branch_id, branch_name in branches:
+        stock = stock_by_branch.get(branch_id)
+        region = branch_region.get(branch_id)
+        result.append(
+            BranchStockOut(
+                branch_id=branch_id,
+                branch_name=branch_name,
+                region_id=region[0] if region else None,
+                region_name=region[1] if region else None,
+                quantity=stock.quantity if stock else 0,
+                low_stock_threshold=stock.low_stock_threshold if stock else 0,
+                effective_price=(stock.price_override if stock and stock.price_override is not None else product.default_price),
+            )
+        )
+    result.sort(key=lambda b: (b.region_name or "", b.branch_name))
+    return result
 
 
 @router.get("", response_model=list[StockOut])
