@@ -44,7 +44,7 @@ def _is_blank_row(raw: tuple) -> bool:
     return all(cell is None or str(cell).strip() == "" for cell in raw)
 
 
-def _parse_price(value: object, field_label: str, row_num: int, errors: list[str]) -> float | None:
+def _parse_price(value: object, field_label: str, errors: list[str]) -> float | None:
     text = _cell_str(value)
     if not text:
         errors.append(f"{field_label} zorunlu")
@@ -132,7 +132,7 @@ def parse_and_validate(
 
         category = _cell_str(category_val) or None
 
-        default_price = _parse_price(price_val, "default_price", row_num, row_errors)
+        default_price = _parse_price(price_val, "default_price", row_errors)
         cost_price = _parse_optional_price(cost_val, "cost_price", row_errors)
         best_before_date = _parse_optional_date(bbd_val, row_errors)
 
