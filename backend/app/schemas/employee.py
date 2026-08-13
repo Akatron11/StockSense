@@ -9,8 +9,9 @@ class EmployeeCreate(BaseModel):
     address: str
     username: str | None = None
     password: str | None = None
-    branch_id: int | None = None  # region_manager → branch_manager oluştururken hedef şube
-    region_id: int | None = None  # general_manager → region_manager oluştururken hedef bölge
+    branch_id: int | None = None  # region_manager → branch_manager / vendor_manager → şube-scoped roller
+    region_id: int | None = None  # general_manager → region_manager / vendor_manager → region_manager
+    company_id: int | None = None  # sadece vendor_manager — hedef şirket (kendi company_id'si yok)
     manager_pin: str | None = None  # sadece PIN_APPROVER_ROLES (stock/seller_manager, operations_chief)
 
 

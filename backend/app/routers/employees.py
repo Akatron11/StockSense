@@ -5,22 +5,31 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims
-from ..models import Branch, Employee, Region
+from ..models import Branch, Company, Employee, Region
 from ..schemas.employee import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from ..security import hash_password
 from ..services.manager_pin import PIN_APPROVER_ROLES
 
 router = APIRouter(prefix="/api/employees", tags=["employees"])
 
-# Madde 6 (Operasyonel Akışlar — Hesap Oluşturma): steady-state'te üst seviye bir alt seviyeyi oluşturur.
-# Day-0/İlk Kurulum (UC-17, Satıcı Yöneticisi) ve Şirket IT override (UC-19) bu kapsamda değil.
+# Madde 6 (Operasyonel Akışlar — Hesap Oluşturma): steady-state'te üst seviye bir alt seviyeyi
+# oluşturur. Day-0/İlk Kurulum (UC-17) artık vendor_manager'ın tüm rolleri oluşturabildiği bir
+# akışla destekleniyor (2026-08-13, bkz. spec) — Şirket IT override (UC-19) hâlâ bu kapsamda değil.
 CREATABLE_ROLES: dict[str, set[str]] = {
     "branch_manager": {"cashier", "stock_manager", "seller_manager"},
     "region_manager": {"branch_manager"},
-    "general_manager": {"region_manager"},
+    "general_manager": {"region_manager", "company_it"},
     "company_it": {"general_manager"},
     "operations_chief": {"staff"},
+    "vendor_manager": {
+        "general_manager", "company_it", "region_manager", "branch_manager",
+        "cashier", "stock_manager", "seller_manager", "operations_chief", "staff",
+    },
 }
+
+# vendor_manager hedef rolüne göre hangi ek scope alanının (branch/region) gerektiğini belirler —
+# create_employee'deki vendor dalında kullanılır.
+_VENDOR_BRANCH_SCOPED_ROLES = {"branch_manager", "cashier", "stock_manager", "seller_manager", "operations_chief", "staff"}
 
 
 def _manageable_query(claims: dict, active_only: bool = True):
@@ -92,14 +101,48 @@ def create_employee(
             raise HTTPException(status_code=404, detail="Şube bulunamadı (kendi bölgenizde değil)")
         branch_id = branch.id
     elif creator_role == "general_manager":
-        if payload.region_id is None:
-            raise HTTPException(status_code=422, detail="region_id gerekli")
-        region = db.scalar(select(Region).where(Region.id == payload.region_id, Region.company_id == claims["company_id"]))
-        if region is None:
-            raise HTTPException(status_code=404, detail="Bölge bulunamadı (kendi şirketinizde değil)")
-        region_id = region.id
+        if payload.role == "region_manager":
+            if payload.region_id is None:
+                raise HTTPException(status_code=422, detail="region_id gerekli")
+            region = db.scalar(select(Region).where(Region.id == payload.region_id, Region.company_id == claims["company_id"]))
+            if region is None:
+                raise HTTPException(status_code=404, detail="Bölge bulunamadı (kendi şirketinizde değil)")
+            region_id = region.id
+        # company_it için ek bir alan gerekmiyor (branch/region bağlanmaz, general_manager'a
+        # branch/region bağlanmadığı gibi) — mevcut "region_id zorunlu" kontrolü artık sadece
+        # payload.role == "region_manager" olduğunda uygulanıyor (önceden koşulsuzdu, çünkü
+        # general_manager tek hedef role sahipti; artık iki hedefi var).
     elif creator_role == "company_it":
         pass  # company_id yeterli, general_manager'a branch/region bağlanmaz
+    elif creator_role == "vendor_manager":
+        if payload.company_id is None:
+            raise HTTPException(status_code=422, detail="company_id gerekli")
+        target_company = db.get(Company, payload.company_id)
+        if target_company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+        company_id = target_company.id
+
+        if payload.role == "region_manager":
+            if payload.region_id is None:
+                raise HTTPException(status_code=422, detail="region_id gerekli")
+            region = db.scalar(
+                select(Region).where(Region.id == payload.region_id, Region.company_id == company_id)
+            )
+            if region is None:
+                raise HTTPException(status_code=404, detail="Bölge bulunamadı (bu şirkete ait değil)")
+            region_id = region.id
+        elif payload.role in _VENDOR_BRANCH_SCOPED_ROLES:
+            if payload.branch_id is None:
+                raise HTTPException(status_code=422, detail="branch_id gerekli")
+            branch = db.scalar(
+                select(Branch)
+                .join(Region, Branch.region_id == Region.id)
+                .where(Branch.id == payload.branch_id, Region.company_id == company_id)
+            )
+            if branch is None:
+                raise HTTPException(status_code=404, detail="Şube bulunamadı (bu şirkete ait değil)")
+            branch_id = branch.id
+        # general_manager / company_it için ek bir alan gerekmiyor — sadece company_id yeterli.
     elif creator_role == "operations_chief":
         branch_id = claims["branch_id"]
 
