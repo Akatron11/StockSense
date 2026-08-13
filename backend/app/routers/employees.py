@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -48,7 +48,12 @@ def _manageable_query(claims: dict, active_only: bool = True):
         query = select(Employee).where(Employee.role == "branch_manager", Employee.branch_id.in_(branch_ids))
     elif role == "general_manager":
         region_ids = select(Region.id).where(Region.company_id == claims["company_id"])
-        query = select(Employee).where(Employee.role == "region_manager", Employee.region_id.in_(region_ids))
+        query = select(Employee).where(
+            or_(
+                and_(Employee.role == "region_manager", Employee.region_id.in_(region_ids)),
+                and_(Employee.role == "company_it", Employee.company_id == claims["company_id"]),
+            )
+        )
     elif role == "company_it":
         query = select(Employee).where(
             Employee.role == "general_manager", Employee.company_id == claims["company_id"]
