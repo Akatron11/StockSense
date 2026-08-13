@@ -14,6 +14,7 @@ import { ReportsDetailPage } from "./pages/ReportsDetailPage";
 import { EmployeeManagementPage } from "./pages/EmployeeManagementPage";
 import { StaffRegistrationPage } from "./pages/StaffRegistrationPage";
 import { ShiftCalendarPage } from "./pages/ShiftCalendarPage";
+import { Day0SetupPage } from "./pages/Day0SetupPage";
 import "./styles/app.css";
 
 function App() {
@@ -83,6 +84,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/day0-setup"
+            element={
+              <ProtectedRoute>
+                <Day0SetupPage />
               </ProtectedRoute>
             }
           />

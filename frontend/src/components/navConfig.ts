@@ -111,7 +111,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     {
       items: [
         { label: "nav.customers", path: "/", icon: "accounts" },
-        { label: "nav.day0Setup", icon: "setup" },
+        { label: "nav.day0Setup", path: "/day0-setup", icon: "setup" },
         { label: "nav.featureRoleConfig", icon: "featureConfig" },
         { label: "nav.branding", icon: "branding" },
       ],

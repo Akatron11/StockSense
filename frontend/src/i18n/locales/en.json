@@ -437,5 +437,28 @@
   },
   "rangeSelector": {
     "days": "{{count}} days"
+  },
+  "day0": {
+    "stepIndicator": "Step {{step}} / {{total}}",
+    "companyName": "Company name",
+    "subdomain": "Subdomain",
+    "regionName": "Region name",
+    "addRegion": "Add region",
+    "branchesForRegion": "{{region}} — branches",
+    "addBranch": "Add branch",
+    "userRole": "Role",
+    "addUser": "Add user",
+    "needGeneralManager": "At least one General Manager must be added.",
+    "summaryCompany": "Company",
+    "summaryRegions": "Regions",
+    "summaryBranches": "Branches",
+    "summaryUsers": "Users",
+    "alreadyCreated": "created",
+    "back": "Back",
+    "next": "Next",
+    "complete": "Complete Setup",
+    "retry": "Retry",
+    "submitFailed": "An error occurred during setup.",
+    "doneMessage": "{{name}} was set up successfully."
   }
 }

@@ -437,5 +437,28 @@
   },
   "rangeSelector": {
     "days": "{{count}} gün"
+  },
+  "day0": {
+    "stepIndicator": "Adım {{step}} / {{total}}",
+    "companyName": "Şirket adı",
+    "subdomain": "Subdomain",
+    "regionName": "Bölge adı",
+    "addRegion": "Bölge ekle",
+    "branchesForRegion": "{{region}} — şubeler",
+    "addBranch": "Şube ekle",
+    "userRole": "Rol",
+    "addUser": "Kullanıcı ekle",
+    "needGeneralManager": "En az bir Genel Müdür eklenmeli.",
+    "summaryCompany": "Şirket",
+    "summaryRegions": "Bölgeler",
+    "summaryBranches": "Şubeler",
+    "summaryUsers": "Kullanıcılar",
+    "alreadyCreated": "oluşturuldu",
+    "back": "Geri",
+    "next": "İleri",
+    "complete": "Kurulumu Tamamla",
+    "retry": "Tekrar dene",
+    "submitFailed": "Kurulum sırasında bir hata oluştu.",
+    "doneMessage": "{{name}} başarıyla kuruldu."
   }
 }
