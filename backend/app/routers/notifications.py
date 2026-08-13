@@ -8,13 +8,10 @@ from ..database import get_db
 from ..deps import get_current_claims
 from ..models import NotificationRead, Product, Stock
 from ..schemas.notification import ExpiringItem, LowStockItem, NotificationReadIn, NotificationsOut
+from ..services.notification_reads import EXPIRING_WITHIN_DAYS
 from ..services.notification_targets import target_branches
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
-
-# stocksense-api-tr.md'de gün sayısı belirtilmemişti — implementasyon sırasında karar verildi
-# (2026-07-27): SKT'ye 7 gün ya da daha az kalan ürünler "yaklaşan" sayılır.
-EXPIRING_WITHIN_DAYS = 7
 
 
 KIND_TO_PRIMARY_ROLE = {"low_stock": "stock_manager", "expiring": "seller_manager"}

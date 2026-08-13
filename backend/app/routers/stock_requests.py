@@ -6,6 +6,7 @@ from ..database import get_db
 from ..deps import get_current_claims
 from ..models import Product, Stock, StockRequest
 from ..schemas.stock_request import StockRequestCreate, StockRequestOut
+from ..services.notification_reads import clear_low_stock_reads
 
 router = APIRouter(prefix="/api/stock-requests", tags=["stock-requests"])
 
@@ -41,6 +42,13 @@ def create_stock_request(
         .where(Stock.product_id == payload.product_id, Stock.branch_id == branch_id)
         .values(quantity=Stock.quantity + payload.quantity)
     )
+
+    # Sprint 6 review bulgusu (2026-08-13) — merkez depo talebiyle stok yükseldiğinde de,
+    # PATCH /api/stock'taki davranışla tutarlı olarak eski düşük-stok okundu-işareti temizlenir
+    # (aksi halde stok tekrar düşünce bildirim sessizce görünmez kalırdı).
+    db.refresh(stock_row)
+    if stock_row.quantity > stock_row.low_stock_threshold:
+        clear_low_stock_reads(db, payload.product_id, branch_id)
 
     stock_request = StockRequest(
         product_id=payload.product_id, branch_id=branch_id, quantity=payload.quantity, requested_by=claims["user_id"]

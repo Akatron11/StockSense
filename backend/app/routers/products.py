@@ -12,6 +12,7 @@ from ..deps import get_current_claims, require_role
 from ..models import Product
 from ..schemas.product import ProductCreate, ProductListOut, ProductRead, ProductUpdate
 from ..schemas.product_import import ImportResultOut
+from ..services.notification_reads import clear_expiring_reads, is_expiring
 from ..services.product_import import EXPECTED_HEADERS, MAX_FILE_SIZE_BYTES, parse_and_validate
 
 router = APIRouter(prefix="/api/products", tags=["products"])
@@ -137,8 +138,16 @@ def update_product(
     product = db.scalar(select(Product).where(Product.id == product_id, Product.company_id == claims["company_id"]))
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    fields = payload.model_dump(exclude_unset=True)
+    for field, value in fields.items():
         setattr(product, field, value)
+
+    # Sprint 6 review bulgusu (2026-08-13) — SKT tarihi güncellenip ürün artık "yaklaşan SKT"
+    # tanımına girmiyorsa (stock.py'deki low_stock temizliğiyle aynı desen), eski okundu-işareti
+    # temizlenir; aksi halde tarih tekrar yaklaştığında bildirim sessizce görünmez kalırdı.
+    if "best_before_date" in fields and not is_expiring(product.best_before_date):
+        clear_expiring_reads(db, product_id)
+
     db.commit()
     db.refresh(product)
     return product
