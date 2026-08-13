@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { apiErrorMessage } from "../api/client";
+import { isMobileAllowedRole } from "../auth/roleAccess";
 import { login } from "../api/auth";
 
 export function LoginScreen() {
@@ -22,6 +23,14 @@ export function LoginScreen() {
         username: username.trim(),
         password,
       });
+      // Sprint 6 review bulgusu (2026-08-13) — spec sadece 5 rolü hedefliyordu, ama backend
+      // rol bazlı bir giriş kısıtı uygulamıyor (mobil app her role JWT veriyor). Diğer roller
+      // (örn. cashier) daha önce boş bir Bildirimler ekranıyla baş başa kalıyordu — artık
+      // client-side'da net bir mesajla engelleniyor, token hiç kaydedilmiyor.
+      if (!isMobileAllowedRole(result.user.role)) {
+        setError("Bu uygulama sizin rolünüz için tasarlanmadı. Lütfen web panelini kullanın.");
+        return;
+      }
       await setSession(result.access_token, result.user);
     } catch (err) {
       setError(apiErrorMessage(err, "Giriş başarısız — bilgileri kontrol edin"));
