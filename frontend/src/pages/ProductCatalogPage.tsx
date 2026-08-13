@@ -1,11 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { AppShell } from "../components/AppShell";
-import { listProducts, createProduct, updateProduct } from "../api/products";
+import { listProducts, createProduct, updateProduct, importProducts, downloadImportTemplate } from "../api/products";
 import { ApiError } from "../api/client";
 import { ProductSalesModal } from "../components/ProductSalesModal";
-import type { ProductRead } from "../types/product";
+import { ImportErrorsModal } from "../components/ImportErrorsModal";
+import type { ImportRowError, ProductRead } from "../types/product";
 import { formatCurrency } from "../utils/currency";
 
 // backend/app/routers/reports.py::PRODUCT_SALES_ROLES ile birebir eşleşir (Faz 3 "satış takibi",
@@ -70,6 +71,11 @@ export function ProductCatalogPage() {
   const [saving, setSaving] = useState(false);
 
   const [salesViewFor, setSalesViewFor] = useState<ProductRead | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<ImportRowError[] | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   async function load() {
     if (!token) return;
@@ -163,6 +169,45 @@ export function ProductCatalogPage() {
     }
   }
 
+  async function handleTemplateDownload() {
+    if (!token) return;
+    try {
+      await downloadImportTemplate(token);
+    } catch {
+      setImportMessage(t("catalog.importGenericError"));
+    }
+  }
+
+  function handleImportClick() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = "";
+    if (!token || !file) return;
+
+    setImporting(true);
+    setImportMessage(null);
+    try {
+      const result = await importProducts(token, file);
+      setImportMessage(t("catalog.importSuccess", { count: result.created }));
+      setPage(1);
+      await load();
+    } catch (err) {
+      if (err instanceof ApiError && err.body && typeof err.body === "object" && "detail" in err.body) {
+        const detail = (err.body as { detail?: unknown }).detail;
+        if (typeof detail === "object" && detail !== null && "errors" in detail) {
+          setImportErrors((detail as { errors: ImportRowError[] }).errors);
+          return;
+        }
+      }
+      setImportMessage(t("catalog.importGenericError"));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <AppShell pageTitle={t("nav.productCatalog")}>
       <div className="scope">{t("catalog.scopeDesc")}</div>
@@ -186,10 +231,24 @@ export function ProductCatalogPage() {
             <button className="btn sm primary" onClick={openCreate}>
               {t("catalog.newProduct")}
             </button>
+            <button className="btn sm ghost" onClick={handleTemplateDownload}>
+              {t("catalog.templateButton")}
+            </button>
+            <button className="btn sm ghost" disabled={importing} onClick={handleImportClick}>
+              {importing ? t("common.saving") : t("catalog.importButton")}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              style={{ display: "none" }}
+              onChange={handleFileSelected}
+            />
           </span>
         </div>
         <div className="panel-body">
           {loadError && <div className="error-text">{loadError}</div>}
+          {importMessage && <div className="muted-small">{importMessage}</div>}
           {loading ? (
             <div className="muted-small">{t("common.loading")}</div>
           ) : (
@@ -353,6 +412,10 @@ export function ProductCatalogPage() {
           productName={salesViewFor.name}
           onClose={() => setSalesViewFor(null)}
         />
+      )}
+
+      {importErrors && (
+        <ImportErrorsModal errors={importErrors} onClose={() => setImportErrors(null)} />
       )}
     </AppShell>
   );
