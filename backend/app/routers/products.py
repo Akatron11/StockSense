@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from io import BytesIO
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -6,6 +10,8 @@ from ..database import get_db
 from ..deps import get_current_claims, require_role
 from ..models import Product
 from ..schemas.product import ProductCreate, ProductListOut, ProductRead, ProductUpdate
+from ..schemas.product_import import ImportResultOut
+from ..services.product_import import EXPECTED_HEADERS, MAX_FILE_SIZE_BYTES, parse_and_validate
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -77,6 +83,27 @@ def search_products(q: str, claims: dict = Depends(get_current_claims), db: Sess
     ).all()
 
 
+@router.get("/import/template")
+def download_import_template(claims: dict = Depends(get_current_claims)):
+    require_role(claims, "general_manager")
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Products"
+    sheet.append(EXPECTED_HEADERS)
+    sheet.append(["Süt 1L", "SKU-MILK-01", "İçecek", 45.90, 30.00, "2026-12-31"])
+    sheet.append(["Ekmek", "SKU-BREAD-01", "Fırın", 12.50, "", ""])
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=urun_import_template.xlsx"},
+    )
+
+
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(product_id: int, claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
     product = db.scalar(select(Product).where(Product.id == product_id, Product.company_id == claims["company_id"]))
@@ -126,3 +153,44 @@ def deactivate_product(
         raise HTTPException(status_code=404, detail="Product not found")
     product.is_active = False
     db.commit()
+
+
+@router.post("/import", response_model=ImportResultOut, status_code=201)
+def import_products(
+    file: UploadFile = File(...),
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    """PROCESS.md Faz 4 "Excel import modülü" — sadece ilk kurulum/bulk-seed, hepsi-ya-da-hiçbiri.
+    Detay: docs/superpowers/specs/2026-08-13-excel-product-import-design.md"""
+    require_role(claims, "general_manager")
+
+    if not file.filename or not file.filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=422, detail="Sadece .xlsx dosyaları kabul edilir")
+
+    file_bytes = file.file.read()
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(status_code=422, detail="Dosya çok büyük (maks. 5MB)")
+
+    rows, errors = parse_and_validate(file_bytes, claims["company_id"], db)
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"errors": [{"row": e.row, "message": e.message} for e in errors]},
+        )
+
+    products = [
+        Product(
+            company_id=claims["company_id"],
+            name=r.name,
+            sku=r.sku,
+            category=r.category,
+            default_price=r.default_price,
+            cost_price=r.cost_price,
+            best_before_date=r.best_before_date,
+        )
+        for r in rows
+    ]
+    db.add_all(products)
+    db.commit()
+    return ImportResultOut(created=len(products))
