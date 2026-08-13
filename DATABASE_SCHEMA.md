@@ -50,7 +50,15 @@ data persisted):
 9. [shifts](#shifts)
 10. [company_features](#company_features)
 11. [company_branding](#company_branding)
-12. [Entity-Relationship Overview](#entity-relationship-overview)
+12. [notification_reads](#notification_reads)
+13. [Entity-Relationship Overview](#entity-relationship-overview)
+
+> **Not (2026-08-13):** Bu dosya, ilk oluşturulduğu tarihten (2026-07-21) sonra eklenen bazı
+> tabloları (`returns`, `return_items`, `stock_requests`, `layout_zones`, `stock_zones`) henüz
+> kapsamıyor — tam yeniden senkronizasyon Sprint 7'nin "son doküman senkronizasyonu" adımına
+> bırakıldı (bkz. `TR dosyalar/PROCESS.md`). `notification_reads` bu review turunda ayrıca
+> eklendi çünkü kodla doğrudan çelişen bir iddiası vardı (`documents/stocksense-api.md`, ayrıca
+> düzeltildi).
 
 ---
 
@@ -263,6 +271,33 @@ Item 10 — 1-1 visual identity per tenant.
 | `updated_at` | `timestamptz` | NOT NULL | `now()` | |
 
 **Indexes:** `company_branding_pkey` PK btree (`company_id`)
+
+---
+
+## notification_reads
+
+Sprint 6 (mobil companion app) — bildirim okundu/okunmadı takibi. `GET /api/notifications`
+kalıcı bir kayıt değil, anlık bir sorgu sonucu (düşük stok / SKT eşiği aşımı) olduğu için
+"hangi bildirim okundu" bilgisi bildirimin kendi ID'siyle değil, onu üreten satırın doğal
+anahtarıyla (`kind` + `product_id` + `branch_id`) tutuluyor.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `employee_id` | `bigint` | NOT NULL | | FK → `employees.id` |
+| `kind` | `varchar(20)` | NOT NULL | | `"low_stock"` \| `"expiring"` |
+| `product_id` | `bigint` | NOT NULL | | FK → `products.id` |
+| `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
+| `read_at` | `timestamptz` | NOT NULL | `now()` | |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | no `updated_at` — bir satır sadece oluşturulur/silinir, güncellenmez |
+
+**Indexes:** `notification_reads_pkey` PK btree (`id`); `uq_notification_read_employee_item`
+UNIQUE btree (`employee_id`, `kind`, `product_id`, `branch_id`)
+
+**Not:** düşük stok/SKT durumu koşulu artık geçersiz hale geldiğinde (stok eşiğin üzerine
+çıkınca, SKT penceresi dışına çıkınca) ilgili satır silinir (`services/notification_reads.py`)
+— aksi halde durum tekrar tetiklenince bildirim eski okundu-işaretiyle sessizce görünmez
+kalırdı (Sprint 6 review bulgusu, 2026-08-13'te düzeltildi).
 
 ---
 

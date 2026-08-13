@@ -90,8 +90,13 @@ The modules below match the Use Case groups in `stocksense-srs.md` and the Compo
 ### Auth
 
 **`POST /api/auth/login`**
-- Input: `username`, `password` (the company is resolved from the subdomain/`Host` header, `company_id`
-  is not requested separately).
+- Input: `username`, `password` (the company is resolved from the subdomain/`Host` header on web,
+  `company_id` is not requested separately).
+- **Updated (Sprint 6, 2026-08-13):** also accepts an optional `subdomain` field in the request body,
+  used by the mobile companion app — mobile clients have no per-tenant `Host` header the way the
+  subdomain-based web app does, so the tenant is picked explicitly at login instead. If `subdomain` is
+  present, it takes priority over `Host`; if `Host` cannot resolve a company and no body `subdomain` is
+  given either, the request still fails the same way it always did. Web behavior is unchanged.
 - Output: `{"access_token": "...", "user": {"id": ..., "full_name": ..., "role": ...}}`.
 - JWT contents (payload): authorization claims only — `user_id`, `role`, `company_id`, `branch_id`,
   `region_id`. Human-readable info (`full_name`, etc.) is not embedded in the token, it is only returned
@@ -254,12 +259,20 @@ audit/history purposes) was added.
 **Notifications — Low Stock / Expiry (UC-11 – UC-12)**
 
 Per the architecture's decision that "there is no real-time sync, polling will be used" (item 15),
-notifications are not pushed — the client periodically asks and finds out. This means a separate
-`Notification` table is not needed: low stock is a **live reflection** of
-`Stock.quantity <= low_stock_threshold`, expiry is a live reflection of `Product.best_before_date`
-approaching — consistent with the "Live-Query, no cache/pre-aggregation" principle (item 5). There is no
-stored/dismissable state; once stock is replenished or a product is deactivated, the notification simply
+notifications are not pushed — the client periodically asks and finds out. Low stock is a **live
+reflection** of `Stock.quantity <= low_stock_threshold`, expiry is a live reflection of
+`Product.best_before_date` approaching — consistent with the "Live-Query, no cache/pre-aggregation"
+principle (item 5); once stock is replenished or a product is deactivated, the notification simply
 drops out of the list on its own.
+
+**Updated (Sprint 6, 2026-08-13):** the mobile companion app added a `notification_reads` table
+(see `DATABASE_SCHEMA.md`) to track per-employee read/unread state — this was previously (and
+incorrectly) documented above as unnecessary. A read mark uses the notification's natural key
+(`kind` + `product_id` + `branch_id`), not a stored notification ID, since notifications
+themselves are still not persisted. A read mark is deleted whenever the underlying condition it
+was marked against resolves (stock rises above threshold, expiry date moves out of the window) —
+if that didn't happen, a notification could reappear pre-marked-read the next time the same
+condition re-triggers.
 
 **`GET /api/notifications`**
 - Input: none — implicit scope. The backend applies the "Notification Target Principle" (item 14 — the
@@ -270,15 +283,24 @@ drops out of the list on its own.
   ```json
   {
     "low_stock": [
-      {"product_id": 42, "product_name": "Milk 1L", "branch_id": 3, "quantity": 1, "threshold": 5}
+      {"product_id": 42, "product_name": "Milk 1L", "branch_id": 3, "quantity": 1, "threshold": 5,
+       "is_read": false}
     ],
     "expiring": [
-      {"product_id": 50, "product_name": "Yogurt 500g", "branch_id": 3, "best_before_date": "2026-08-01"}
+      {"product_id": 50, "product_name": "Yogurt 500g", "branch_id": 3, "best_before_date": "2026-08-01",
+       "is_read": false}
     ]
   }
   ```
 - No separate endpoint for the discount decision (UC-12) — the Seller Manager applies the discount via
   `PATCH /api/stock/{product_id}` (`price_override`).
+
+**`POST /api/notifications/read`** (Sprint 6)
+- Input: `{"kind": "low_stock" | "expiring", "product_id": 42, "branch_id": 3}`.
+- Validates that the caller's role/scope can actually target this `(kind, branch_id)` pair and that a
+  matching `Stock` row exists — otherwise `404`, not a silently-accepted write for an arbitrary
+  product/branch.
+- `204 No Content` on success (upsert — marking an already-read item read again is a no-op).
 
 ### Reporting / Layout Recommendation (UC-13 – UC-16)
 
