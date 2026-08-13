@@ -1,5 +1,5 @@
 import { authFetch } from "./client";
-import type { BrandingOut, BrandingUpdatePayload, CompanyOut, FeatureOut } from "../types/company";
+import type { BrandingOut, BrandingUpdatePayload, CompanyCreatePayload, CompanyOut, FeatureOut } from "../types/company";
 
 export function listCompanies(token: string): Promise<CompanyOut[]> {
   return authFetch<CompanyOut[]>(token, "/api/companies");
@@ -25,4 +25,8 @@ export function updateBranding(token: string, companyId: number, payload: Brandi
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+export function createCompany(token: string, payload: CompanyCreatePayload): Promise<CompanyOut> {
+  return authFetch<CompanyOut>(token, "/api/companies", { method: "POST", body: JSON.stringify(payload) });
 }

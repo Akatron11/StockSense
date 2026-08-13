@@ -21,8 +21,9 @@ export interface EmployeeCreatePayload {
   address: string;
   username?: string | null;
   password?: string | null;
-  branch_id?: number | null; // region_manager → branch_manager oluştururken hedef şube
-  region_id?: number | null; // general_manager → region_manager oluştururken hedef bölge
+  branch_id?: number | null; // region_manager → branch_manager / vendor_manager → şube-scoped roller
+  region_id?: number | null; // general_manager → region_manager / vendor_manager → region_manager
+  company_id?: number | null; // sadece vendor_manager — hedef şirket
   manager_pin?: string | null; // sadece PIN_APPROVER_ROLES
 }
 

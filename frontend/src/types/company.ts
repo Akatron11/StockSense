@@ -22,3 +22,8 @@ export interface BrandingUpdatePayload {
   primary_color: string | null;
   display_name: string;
 }
+
+export interface CompanyCreatePayload {
+  name: string;
+  subdomain: string;
+}
