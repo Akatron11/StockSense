@@ -200,7 +200,15 @@
     "category": "Category",
     "salePriceFull": "Sale price (default_price)",
     "costFull": "Cost (cost_price)",
-    "bbd": "Best-before date (best_before_date)"
+    "bbd": "Best-before date (best_before_date)",
+    "templateButton": "Download template",
+    "importButton": "Import from Excel",
+    "importSuccess": "{{count}} products added",
+    "importErrorsTitle": "Import failed",
+    "importErrorsIntro": "{{count}} errors found, no products were added. Fix the file and try again.",
+    "importErrorsRow": "Row",
+    "importErrorsMessage": "Error",
+    "importGenericError": "Import failed."
   },
   "price": {
     "scopeDesc": "Scope: own branch · empty override → default price applies",
