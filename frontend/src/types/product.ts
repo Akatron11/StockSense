@@ -25,3 +25,14 @@ export interface ProductCreatePayload {
 }
 
 export type ProductUpdatePayload = Partial<ProductCreatePayload>;
+
+// backend/app/schemas/product_import.py::ImportRowErrorOut ile birebir eşleşir.
+export interface ImportRowError {
+  row: number | null;
+  message: string;
+}
+
+// backend/app/schemas/product_import.py::ImportResultOut ile birebir eşleşir.
+export interface ImportResult {
+  created: number;
+}
