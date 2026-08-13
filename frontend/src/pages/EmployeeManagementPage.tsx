@@ -9,11 +9,12 @@ import { apiErrorMessage } from "../api/client";
 import type { EmployeeOut } from "../types/employee";
 import type { BranchOut, RegionOut } from "../types/org";
 
-// backend/app/routers/employees.py::CREATABLE_ROLES ile birebir eşleşir.
+// backend/app/routers/employees.py::CREATABLE_ROLES ile birebir eşleşir (vendor_manager hariç —
+// vendor_manager bu sayfayı kullanmıyor, kendi Day0SetupPage'i var).
 const CREATABLE_ROLES: Record<string, string[]> = {
   branch_manager: ["cashier", "stock_manager", "seller_manager"],
   region_manager: ["branch_manager"],
-  general_manager: ["region_manager"],
+  general_manager: ["region_manager", "company_it"],
   company_it: ["general_manager"],
 };
 
@@ -153,7 +154,7 @@ export function EmployeeManagementPage() {
           username: form.username,
           password: form.password,
           branch_id: creatorRole === "region_manager" ? Number(form.branch_id) : undefined,
-          region_id: creatorRole === "general_manager" ? Number(form.region_id) : undefined,
+          region_id: form.role === "region_manager" ? Number(form.region_id) : undefined,
           manager_pin: PIN_APPROVER_ROLES.includes(form.role) && form.manager_pin ? form.manager_pin : undefined,
         });
       }
@@ -270,7 +271,7 @@ export function EmployeeManagementPage() {
               </div>
             )}
 
-            {!editing && creatorRole === "general_manager" && (
+            {!editing && form.role === "region_manager" && (
               <div className="field">
                 <label>{t("employees.targetRegion")}</label>
                 <select className="input" value={form.region_id} onChange={(e) => setForm({ ...form, region_id: e.target.value })}>
