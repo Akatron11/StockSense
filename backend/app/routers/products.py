@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -166,11 +167,17 @@ def import_products(
     require_role(claims, "general_manager")
 
     if not file.filename or not file.filename.lower().endswith(".xlsx"):
-        raise HTTPException(status_code=422, detail="Sadece .xlsx dosyaları kabul edilir")
+        raise HTTPException(
+            status_code=422,
+            detail={"errors": [{"row": None, "message": "Sadece .xlsx dosyaları kabul edilir"}]},
+        )
 
     file_bytes = file.file.read()
     if len(file_bytes) > MAX_FILE_SIZE_BYTES:
-        raise HTTPException(status_code=422, detail="Dosya çok büyük (maks. 5MB)")
+        raise HTTPException(
+            status_code=422,
+            detail={"errors": [{"row": None, "message": "Dosya çok büyük (maks. 5MB)"}]},
+        )
 
     rows, errors = parse_and_validate(file_bytes, claims["company_id"], db)
     if errors:
@@ -192,5 +199,19 @@ def import_products(
         for r in rows
     ]
     db.add_all(products)
-    db.commit()
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "errors": [
+                    {
+                        "row": None,
+                        "message": "Veritabanına kaydedilirken bir hata oluştu, lütfen dosyayı kontrol edip tekrar deneyin",
+                    }
+                ]
+            },
+        )
     return ImportResultOut(created=len(products))

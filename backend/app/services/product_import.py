@@ -67,6 +67,20 @@ def _parse_optional_price(value: object, field_label: str, errors: list[str]) ->
         return None
 
 
+def _check_max_length(value: str, field_label: str, max_length: int, errors: list[str]) -> None:
+    if len(value) > max_length:
+        errors.append(f"{field_label} en fazla {max_length} karakter olabilir")
+
+
+def _check_price_range(value: float | None, field_label: str, errors: list[str]) -> None:
+    if value is None:
+        return
+    # Numeric(10, 2) allows at most 8 digits before the decimal point.
+    integer_part = abs(int(value))
+    if len(str(integer_part)) > 8:
+        errors.append(f"{field_label} çok büyük bir değer")
+
+
 def _parse_optional_date(value: object, errors: list[str]) -> date | None:
     if value is None or _cell_str(value) == "":
         return None
@@ -125,16 +139,25 @@ def parse_and_validate(
         name = _cell_str(name_val)
         if not name:
             row_errors.append("name zorunlu")
+        else:
+            _check_max_length(name, "name", 150, row_errors)
 
         sku = _cell_str(sku_val)
         if not sku:
             row_errors.append("sku zorunlu")
+        else:
+            _check_max_length(sku, "sku", 50, row_errors)
 
         category = _cell_str(category_val) or None
+        if category:
+            _check_max_length(category, "category", 100, row_errors)
 
         default_price = _parse_price(price_val, "default_price", row_errors)
         cost_price = _parse_optional_price(cost_val, "cost_price", row_errors)
         best_before_date = _parse_optional_date(bbd_val, row_errors)
+
+        _check_price_range(default_price, "default_price", row_errors)
+        _check_price_range(cost_price, "cost_price", row_errors)
 
         if sku:
             if sku in existing_skus:
