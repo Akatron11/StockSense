@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_claims, require_role
 from ..models import Company, CompanyBranding, CompanyFeature
-from ..schemas.company import BrandingOut, BrandingUpdate, CompanyOut, FeatureOut, FeatureUpdate
+from ..schemas.company import BrandingOut, BrandingUpdate, CompanyCreate, CompanyOut, FeatureOut, FeatureUpdate
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
 
@@ -26,6 +27,24 @@ def list_companies(claims: dict = Depends(get_current_claims), db: Session = Dep
     """UC-22/UC-23 — Satıcı Yöneticisi'nin konfigüre edeceği müşteri seçimi."""
     require_role(claims, "vendor_manager")
     return db.scalars(select(Company)).all()
+
+
+@router.post("", response_model=CompanyOut, status_code=201)
+def create_company(
+    payload: CompanyCreate, claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)
+):
+    """Day-0 (UC-17) — Satıcı Yöneticisi yeni bir müşteri şirketi kurar.
+    Detay: docs/superpowers/specs/2026-08-13-day0-vendor-setup-design.md"""
+    require_role(claims, "vendor_manager")
+    company = Company(name=payload.name, subdomain=payload.subdomain)
+    db.add(company)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Bu subdomain zaten kullanımda")
+    db.refresh(company)
+    return company
 
 
 @router.get("/{company_id}/features", response_model=list[FeatureOut])

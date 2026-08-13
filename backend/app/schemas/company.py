@@ -1,8 +1,28 @@
+import re
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 # Logo, DB'de base64 data-URL olarak saklanıyor (kullanıcı kararı, 2026-08-04 — ayrı bir disk/object
 # storage kurmaya değmeyecek ölçek). Ham dosya boyutu sınırı ~300KB (base64 karakter sayısı ~1.37 kat).
 MAX_LOGO_DATA_URL_LENGTH = 410_000
+
+SUBDOMAIN_PATTERN = re.compile(r"^[a-z0-9-]{1,63}$")
+RESERVED_SUBDOMAINS = {"admin"}  # deps.py::VENDOR_ADMIN_SUBDOMAIN ile tutarlı
+
+
+class CompanyCreate(BaseModel):
+    name: str
+    subdomain: str
+
+    @field_validator("subdomain")
+    @classmethod
+    def validate_subdomain(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SUBDOMAIN_PATTERN.match(normalized):
+            raise ValueError("subdomain sadece küçük harf, rakam ve tire içerebilir (maks. 63 karakter)")
+        if normalized in RESERVED_SUBDOMAINS:
+            raise ValueError(f"'{normalized}' rezerve bir subdomain, kullanılamaz")
+        return normalized
 
 
 class CompanyOut(BaseModel):
