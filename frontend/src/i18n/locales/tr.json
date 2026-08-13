@@ -200,7 +200,15 @@
     "category": "Kategori",
     "salePriceFull": "Satış fiyatı (default_price)",
     "costFull": "Maliyet (cost_price)",
-    "bbd": "SKT (best_before_date)"
+    "bbd": "SKT (best_before_date)",
+    "templateButton": "Template indir",
+    "importButton": "Excel'den içe aktar",
+    "importSuccess": "{{count}} ürün eklendi",
+    "importErrorsTitle": "İçe aktarma başarısız",
+    "importErrorsIntro": "{{count}} hata bulundu, hiçbir ürün eklenmedi. Dosyayı düzeltip tekrar deneyin.",
+    "importErrorsRow": "Satır",
+    "importErrorsMessage": "Hata",
+    "importGenericError": "İçe aktarma başarısız oldu."
   },
   "price": {
     "scopeDesc": "Kapsam: kendi şubesi · boş override → varsayılan fiyat geçerli",
