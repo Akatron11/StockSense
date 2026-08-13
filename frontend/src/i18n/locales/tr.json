@@ -449,6 +449,7 @@
     "userRole": "Rol",
     "addUser": "Kullanıcı ekle",
     "needGeneralManager": "En az bir Genel Müdür eklenmeli.",
+    "rowIncomplete": "{{name}} — eksik alanlar: {{fields}}",
     "summaryCompany": "Şirket",
     "summaryRegions": "Bölgeler",
     "summaryBranches": "Şubeler",

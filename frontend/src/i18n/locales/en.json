@@ -449,6 +449,7 @@
     "userRole": "Role",
     "addUser": "Add user",
     "needGeneralManager": "At least one General Manager must be added.",
+    "rowIncomplete": "{{name}} — missing: {{fields}}",
     "summaryCompany": "Company",
     "summaryRegions": "Regions",
     "summaryBranches": "Branches",

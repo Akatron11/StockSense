@@ -34,6 +34,36 @@ const BRANCH_SCOPED_ROLES = new Set([
 // backend/app/services/manager_pin.py::PIN_APPROVER_ROLES ile birebir eşleşir.
 const PIN_APPROVER_ROLES = new Set(["stock_manager", "seller_manager", "operations_chief"]);
 
+// StaffRegistrationPage.tsx ile birebir eşleşir: staff rolünün username/password/PIN'i yok.
+const NO_LOGIN_ROLES = new Set(["staff"]);
+
+type UserRowIssue = "age" | "address" | "username" | "password" | "targetRegion" | "targetBranch";
+
+const ROW_ISSUE_LABEL_KEYS: Record<UserRowIssue, string> = {
+  age: "common.age",
+  address: "common.address",
+  username: "employees.username",
+  password: "employees.tempPassword",
+  targetRegion: "employees.targetRegion",
+  targetBranch: "employees.targetBranch",
+};
+
+// Step 4'te "Next"/"Kurulumu Tamamla" ile ilerlemeden önce her satırın (first_name doluysa) kurulum için
+// gerekli tüm alanları taşıdığından emin olunur — aksi halde hata company/region/branch zaten oluşturulduktan
+// sonra, employee create çağrısında 422 olarak ortaya çıkıyordu.
+function getUserRowIssues(u: UserDraft): UserRowIssue[] {
+  const issues: UserRowIssue[] = [];
+  if (!u.age.trim()) issues.push("age");
+  if (!u.address.trim()) issues.push("address");
+  if (!NO_LOGIN_ROLES.has(u.role)) {
+    if (!u.username.trim()) issues.push("username");
+    if (!u.password.trim()) issues.push("password");
+  }
+  if (u.role === "region_manager" && !u.targetRegionDraftId) issues.push("targetRegion");
+  if (BRANCH_SCOPED_ROLES.has(u.role) && !u.targetBranchDraftId) issues.push("targetBranch");
+  return issues;
+}
+
 let nextDraftId = 1;
 function newDraftId(): string {
   return String(nextDraftId++);
@@ -130,10 +160,12 @@ export function Day0SetupPage() {
   }
 
   const hasGeneralManager = users.some((u) => u.role === "general_manager" && u.first_name.trim());
+  const activeUsers = users.filter((u) => u.first_name.trim());
+  const incompleteUsers = activeUsers.filter((u) => getUserRowIssues(u).length > 0);
   const canProceedFromStep1 = companyName.trim().length > 0 && subdomain.trim().length > 0;
   const canProceedFromStep2 = regions.some((r) => r.name.trim());
   const canProceedFromStep3 = branches.some((b) => b.name.trim());
-  const canProceedFromStep4 = hasGeneralManager;
+  const canProceedFromStep4 = hasGeneralManager && incompleteUsers.length === 0;
 
   async function handleSubmit() {
     if (!token) return;
@@ -263,7 +295,9 @@ export function Day0SetupPage() {
 
           {step === 4 && (
             <>
-              {users.map((u) => (
+              {users.map((u) => {
+                const rowIssues = u.first_name.trim() ? getUserRowIssues(u) : [];
+                return (
                 <div key={u.draftId} className="panel" style={{ marginBottom: 12 }}>
                   <div className="panel-body">
                     <div className="form-grid">
@@ -339,9 +373,19 @@ export function Day0SetupPage() {
                         <input className="input" value={u.manager_pin} onChange={(e) => updateUser(u.draftId, { manager_pin: e.target.value })} />
                       </div>
                     )}
+
+                    {rowIssues.length > 0 && (
+                      <div className="error-text">
+                        {t("day0.rowIncomplete", {
+                          name: `${u.first_name} ${u.last_name}`.trim(),
+                          fields: rowIssues.map((i) => t(ROW_ISSUE_LABEL_KEYS[i])).join(", "),
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <button className="btn sm ghost" onClick={addUser}>{t("day0.addUser")}</button>
               {!hasGeneralManager && <div className="error-text">{t("day0.needGeneralManager")}</div>}
             </>
