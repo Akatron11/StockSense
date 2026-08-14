@@ -35,3 +35,7 @@ export interface EmployeeUpdatePayload {
   is_active?: boolean;
   manager_pin?: string;
 }
+
+export interface PasswordResetPayload {
+  new_password: string;
+}
