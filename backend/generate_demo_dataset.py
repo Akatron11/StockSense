@@ -125,7 +125,11 @@ def _generate_company(db, spec: CompanySpec, raw_products: list, is_megamarket: 
 
     generate_returns(db, all_sales, org.employees_by_branch)
 
-    all_employees = [e for roster in org.employees_by_branch.values() for lst in roster.values() for e in lst]
+    # Query all company employees directly rather than flattening employees_by_branch, which only
+    # contains branch-scoped roles and omits general_manager/company_it/region_manager (created in
+    # build_company_org but not stored in OrgResult). Every employee for this company is already
+    # flushed to the DB by this point, so every role gets a shift schedule.
+    all_employees = db.query(Employee).filter(Employee.company_id == org.company.id).all()
     generate_shifts(db, all_employees)
 
     print(f"{spec.name}: {len(org.branches)} branches, {len(products)} products, {len(all_sales)} sales")
