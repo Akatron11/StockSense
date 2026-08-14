@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import get_current_claims
+from ..deps import get_current_claims, require_role
 from ..models import Branch, Company, Employee, Region
 from ..schemas.employee import EmployeeCreate, EmployeeOut, EmployeeUpdate
 from ..security import hash_password
@@ -73,6 +73,18 @@ def list_employees(claims: dict = Depends(get_current_claims), db: Session = Dep
     query = _manageable_query(claims)
     if query is None:
         raise HTTPException(status_code=403, detail="Bu role tanımlı bir hesap listesi yok")
+    return db.scalars(query).all()
+
+
+@router.get("/company-wide", response_model=list[EmployeeOut])
+def list_employees_company_wide(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
+    """UC-19 (Şirket IT Override) — hiyerarşiden bağımsız, çağıranın company_id'sindeki tüm
+    çalışanları döner (_manageable_query'den ayrı, çünkü company_it hiyerarşi zincirinde değil).
+    Detay: docs/superpowers/specs/2026-08-14-company-it-account-override-design.md"""
+    require_role(claims, "company_it")
+    query = select(Employee).where(
+        Employee.company_id == claims["company_id"], Employee.is_active.is_(True)
+    )
     return db.scalars(query).all()
 
 
