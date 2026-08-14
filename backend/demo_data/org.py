@@ -33,6 +33,7 @@ STREET_NAMES = ["Main", "Park", "River", "Market", "Center", "Garden", "Hill", "
 DEMO_PASSWORD = "Demo1234!"
 DEMO_PIN = "1234"
 
+
 @dataclass(frozen=True)
 class BranchSpec:
     name: str
