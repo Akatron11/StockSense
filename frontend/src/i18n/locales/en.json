@@ -162,6 +162,10 @@
     "managerPinEdit": "Manager PIN (fill in to change)",
     "activeCheckbox": "Active",
     "hintRestriction": "The role list is restricted by hierarchy: {{creator}} can only create {{targets}}.",
+    "bulkAdd": "Bulk add",
+    "bulkModalTitle": "Bulk create accounts (General Manager)",
+    "bulkAddRow": "Add account",
+    "bulkSubmitFailed": "An error occurred during bulk creation.",
     "create": "Create"
   },
   "staff": {

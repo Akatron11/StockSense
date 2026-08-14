@@ -162,6 +162,10 @@
     "managerPinEdit": "Manager PIN (değiştirmek için doldurun)",
     "activeCheckbox": "Aktif",
     "hintRestriction": "Rol listesi role göre kısıtlıdır: {{creator}} sadece {{targets}} açabilir.",
+    "bulkAdd": "Toplu ekle",
+    "bulkModalTitle": "Toplu hesap oluştur (Genel Müdür)",
+    "bulkAddRow": "Hesap ekle",
+    "bulkSubmitFailed": "Toplu oluşturma sırasında hata oluştu.",
     "create": "Oluştur"
   },
   "staff": {

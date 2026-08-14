@@ -51,6 +51,35 @@ function emptyForm(defaultRole: string): FormState {
   };
 }
 
+let nextBulkDraftId = 1;
+function newBulkDraftId(): string {
+  return String(nextBulkDraftId++);
+}
+
+interface BulkUserDraft {
+  draftId: string;
+  first_name: string;
+  last_name: string;
+  age: string;
+  address: string;
+  username: string;
+  password: string;
+  createdId: number | null;
+}
+
+function emptyBulkDraft(): BulkUserDraft {
+  return {
+    draftId: newBulkDraftId(),
+    first_name: "",
+    last_name: "",
+    age: "",
+    address: "",
+    username: "",
+    password: "",
+    createdId: null,
+  };
+}
+
 // prototype/hesap-yonetimi.html'in React karşılığı. Wireframe sadece branch_manager senaryosunu
 // gösteriyordu (hedef her zaman kendi şube, seçici yok) — region_manager/general_manager/company_it
 // backend'de aynı /api/employees'i kullandığı için bu sayfa role-agnostic kuruldu (kullanıcı kararı,
@@ -74,6 +103,11 @@ export function EmployeeManagementPage() {
   const [form, setForm] = useState<FormState>(emptyForm(targetRoles[0] ?? ""));
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkUserDraft[]>([emptyBulkDraft()]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   async function load() {
     if (!token) return;
@@ -167,6 +201,50 @@ export function EmployeeManagementPage() {
     }
   }
 
+  function openBulkCreate() {
+    setBulkRows([emptyBulkDraft()]);
+    setBulkError(null);
+    setBulkOpen(true);
+  }
+
+  function addBulkRow() {
+    setBulkRows((prev) => [...prev, emptyBulkDraft()]);
+  }
+
+  function updateBulkRow(draftId: string, patch: Partial<BulkUserDraft>) {
+    setBulkRows((prev) => prev.map((r) => (r.draftId === draftId ? { ...r, ...patch } : r)));
+  }
+
+  async function handleBulkSubmit() {
+    if (!token) return;
+    setBulkSubmitting(true);
+    setBulkError(null);
+    try {
+      const next = [...bulkRows];
+      for (let i = 0; i < next.length; i++) {
+        const row = next[i];
+        if (row.createdId !== null || !row.first_name.trim()) continue;
+        const created = await createEmployee(token, {
+          first_name: row.first_name.trim(),
+          last_name: row.last_name.trim(),
+          role: "general_manager",
+          age: Number(row.age),
+          address: row.address.trim(),
+          username: row.username.trim(),
+          password: row.password,
+        });
+        next[i] = { ...row, createdId: created.id };
+        setBulkRows([...next]);
+      }
+      setBulkOpen(false);
+      await load();
+    } catch (err) {
+      setBulkError(apiErrorMessage(err, t("employees.bulkSubmitFailed")));
+    } finally {
+      setBulkSubmitting(false);
+    }
+  }
+
   const showRoleSelect = targetRoles.length > 1;
   const canPickPin = !editing && PIN_APPROVER_ROLES.includes(form.role);
   const canEditPin = editing !== null && PIN_APPROVER_ROLES.includes(editing.role);
@@ -193,6 +271,11 @@ export function EmployeeManagementPage() {
             <button className="btn sm primary" onClick={openCreate} disabled={targetRoles.length === 0}>
               {t("employees.newAccount")}
             </button>
+            {creatorRole === "company_it" && (
+              <button className="btn sm ghost" onClick={openBulkCreate}>
+                {t("employees.bulkAdd")}
+              </button>
+            )}
           </span>
         </div>
         <div className="panel-body">
@@ -342,6 +425,100 @@ export function EmployeeManagementPage() {
           </div>
         </div>
       </div>
+
+      {creatorRole === "company_it" && (
+        <div className={`overlay${bulkOpen ? " open" : ""}`}>
+          <div className="modal">
+            <div className="modal-head">{t("employees.bulkModalTitle")}</div>
+            <div className="modal-body">
+              {bulkRows.map((row) => (
+                <div key={row.draftId} className="panel" style={{ marginBottom: 12 }}>
+                  <div className="panel-body">
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>{t("common.firstName")}</label>
+                        <input
+                          className="input"
+                          value={row.first_name}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { first_name: e.target.value })}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>{t("common.lastName")}</label>
+                        <input
+                          className="input"
+                          value={row.last_name}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { last_name: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>{t("common.age")}</label>
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          value={row.age}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { age: e.target.value })}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>{t("common.address")}</label>
+                        <input
+                          className="input"
+                          value={row.address}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { address: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>{t("employees.username")}</label>
+                        <input
+                          className="input"
+                          value={row.username}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { username: e.target.value })}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>{t("employees.tempPassword")}</label>
+                        <input
+                          className="input"
+                          type="password"
+                          value={row.password}
+                          disabled={row.createdId !== null}
+                          onChange={(e) => updateBulkRow(row.draftId, { password: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    {row.createdId !== null && (
+                      <div className="muted-small">{t("day0.alreadyCreated")}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button className="btn sm ghost" onClick={addBulkRow}>
+                {t("employees.bulkAddRow")}
+              </button>
+              {bulkError && <div className="error-text">{bulkError}</div>}
+            </div>
+            <div className="modal-foot">
+              <button className="btn ghost" onClick={() => setBulkOpen(false)}>
+                {t("common.cancel")}
+              </button>
+              <button className="btn primary" disabled={bulkSubmitting} onClick={handleBulkSubmit}>
+                {bulkSubmitting ? t("common.saving") : bulkError ? t("day0.retry") : t("employees.create")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
