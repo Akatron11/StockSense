@@ -97,6 +97,7 @@ export function EmployeeManagementPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const [editing, setEditing] = useState<EmployeeOut | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -115,7 +116,7 @@ export function EmployeeManagementPage() {
     setLoadError(null);
     try {
       const [emps, branchList, regionList] = await Promise.all([
-        listEmployees(token),
+        listEmployees(token, showInactive),
         creatorRole === "region_manager" ? listBranches(token) : Promise.resolve([]),
         creatorRole === "general_manager" ? listRegions(token) : Promise.resolve([]),
       ]);
@@ -132,7 +133,7 @@ export function EmployeeManagementPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, creatorRole]);
+  }, [token, creatorRole, showInactive]);
 
   const filtered = employees.filter((e) => {
     const q = search.trim().toLowerCase();
@@ -268,6 +269,14 @@ export function EmployeeManagementPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <label className="muted-small" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+              {t("employees.showInactive")}
+            </label>
             <button className="btn sm primary" onClick={openCreate} disabled={targetRoles.length === 0}>
               {t("employees.newAccount")}
             </button>

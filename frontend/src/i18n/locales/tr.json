@@ -145,6 +145,7 @@
     "scopeDesc": "Üst seviye, bir alt seviyeyi oluşturur ({{creator}} → {{targets}})",
     "title": "Hesaplar",
     "searchPlaceholder": "Ara: ad / kullanıcı adı",
+    "showInactive": "Pasifleri de göster",
     "newAccount": "Yeni hesap",
     "loadError": "Hesap listesi alınamadı.",
     "colName": "Ad",

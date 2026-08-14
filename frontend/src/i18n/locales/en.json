@@ -145,6 +145,7 @@
     "scopeDesc": "A higher level creates the next level down ({{creator}} → {{targets}})",
     "title": "Accounts",
     "searchPlaceholder": "Search: name / username",
+    "showInactive": "Show inactive too",
     "newAccount": "New account",
     "loadError": "Could not load the account list.",
     "colName": "Name",

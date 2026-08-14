@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -69,8 +69,12 @@ def _manageable_query(claims: dict, active_only: bool = True):
 
 
 @router.get("", response_model=list[EmployeeOut])
-def list_employees(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
-    query = _manageable_query(claims)
+def list_employees(
+    include_inactive: bool = Query(default=False),
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    query = _manageable_query(claims, active_only=not include_inactive)
     if query is None:
         raise HTTPException(status_code=403, detail="Bu role tanımlı bir hesap listesi yok")
     return db.scalars(query).all()
