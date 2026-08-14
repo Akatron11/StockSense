@@ -7,10 +7,9 @@ General conventions were decided first, then each module (matching the Component
 > **Verified against source (2026-08-13):** the "Modules" section below was regenerated directly from
 > `backend/app/routers/*.py` and `backend/app/schemas/*.py` — every field name, status code, and JSON
 > example reflects the actual running code, not the original design-time plan. A few endpoints from the
-> original design were never built this way (a dedicated `POST /api/employees/{id}/reset-password`,
-> separate `GET /api/reports/top-products` and `GET /api/reports/profit-margin` endpoints, bulk
-> `POST /api/shifts/bulk`) — see the "Known Design vs. Implementation Differences" note at the end of this
-> file for what replaced them and why.
+> original design were never built this way (separate `GET /api/reports/top-products` and
+> `GET /api/reports/profit-margin` endpoints, bulk `POST /api/shifts/bulk`) — see the "Known Design vs.
+> Implementation Differences" note at the end of this file for what replaced them and why.
 
 ---
 
@@ -359,6 +358,11 @@ rules per target role.
 - **`GET /api/employees`** — caller's manageable subordinate set, scoped by branch/region/company. 200/403.
 - **`POST /api/employees`** — gated by the table above; `staff` has no username/password; `manager_pin` only for `PIN_APPROVER_ROLES` (`stock_manager`/`seller_manager`/`operations_chief`). 201/403/422/404 (target branch/region outside creator's scope)/409 (username taken).
 - **`PATCH /api/employees/{id}`** — same manageable-set gate; `is_active` can be flipped back to `true` to reactivate. 200/403/404/422.
+- **`GET /api/employees/company-wide`** — role `company_it` only; every login-capable employee in the
+  caller's company, independent of hierarchy (UC-19, Company IT override). 200/403.
+- **`POST /api/employees/{id}/reset-password`** — role `company_it` only; body `{"new_password": str}`
+  (`min_length=1`); target must belong to caller's own company (404 otherwise — no
+  forced-change-on-next-login flag, no audit log, both explicitly out of scope). 200/403/404/422.
 ```json
 { "first_name": "Ali", "last_name": "Veli", "role": "cashier", "age": 28, "address": "İstanbul", "username": "aveli", "password": "secret123", "branch_id": null, "region_id": null, "manager_pin": null }
 ```
@@ -423,8 +427,6 @@ diverge:
   The implemented version is `GET /api/shifts/roster` + `GET /api/shifts/week` + `PUT
   /api/shifts/{employee_id}` (upsert, called once per cell edited in the weekly calendar UI) — no bulk
   endpoint exists; the UI simply calls the single upsert endpoint once per change.
-- **`POST /api/employees/{id}/reset-password` (UC-19, Company IT override)** was designed but never
-  implemented — deliberately deferred, see the architecture document's "Open Decisions" section.
 - Several endpoints exist now that weren't part of the original design at all: `GET
   /api/reports/product-sales/{id}`, `GET /api/stock/product/{id}/branches`, `GET /api/currency/rates`,
   `POST /api/products/import` + `GET /api/products/import/template`, the whole `layout_zones.py` /

@@ -8,6 +8,7 @@ import { GeneralManagerDashboard } from "./GeneralManagerDashboard";
 import { SellerManagerDashboard } from "./SellerManagerDashboard";
 import { OperationsChiefDashboard } from "./OperationsChiefDashboard";
 import { VendorCustomersPage } from "./VendorCustomersPage";
+import { AccountOverridePage } from "./AccountOverridePage";
 
 // Rol-bazlı pano gövdeleri role role kuruluyor (Sprint 4). Kurulmuş roller için ilgili panoya yönlendirir,
 // geri kalanlar için geçici "Hoş geldin" içeriği gösterir.
@@ -30,6 +31,8 @@ export function HomePage() {
       return <OperationsChiefDashboard />;
     case "vendor_manager":
       return <VendorCustomersPage />;
+    case "company_it":
+      return <AccountOverridePage />;
   }
 
   return (

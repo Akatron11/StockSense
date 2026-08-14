@@ -79,11 +79,15 @@ def list_employees(claims: dict = Depends(get_current_claims), db: Session = Dep
 @router.get("/company-wide", response_model=list[EmployeeOut])
 def list_employees_company_wide(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
     """UC-19 (Şirket IT Override) — hiyerarşiden bağımsız, çağıranın company_id'sindeki tüm
-    çalışanları döner (_manageable_query'den ayrı, çünkü company_it hiyerarşi zincirinde değil).
+    LOGIN YAPABİLEN çalışanları döner (_manageable_query'den ayrı, çünkü company_it hiyerarşi
+    zincirinde değil). username'i olmayan (tasarım gereği login'i olmayan) staff kayıtları
+    dışlanır — şifre sıfırlama onlar için anlamsız.
     Detay: docs/superpowers/specs/2026-08-14-company-it-account-override-design.md"""
     require_role(claims, "company_it")
     query = select(Employee).where(
-        Employee.company_id == claims["company_id"], Employee.is_active.is_(True)
+        Employee.company_id == claims["company_id"],
+        Employee.is_active.is_(True),
+        Employee.username.is_not(None),
     )
     return db.scalars(query).all()
 
