@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class EmployeeCreate(BaseModel):
@@ -38,3 +38,7 @@ class EmployeeOut(BaseModel):
     region_id: int | None = None
     company_id: int | None = None
     is_active: bool
+
+
+class PasswordReset(BaseModel):
+    new_password: str = Field(min_length=1)

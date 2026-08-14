@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_claims, require_role
 from ..models import Branch, Company, Employee, Region
-from ..schemas.employee import EmployeeCreate, EmployeeOut, EmployeeUpdate
+from ..schemas.employee import EmployeeCreate, EmployeeOut, EmployeeUpdate, PasswordReset
 from ..security import hash_password
 from ..services.manager_pin import PIN_APPROVER_ROLES
 
@@ -211,6 +211,29 @@ def update_employee(
 
     for field, value in fields.items():
         setattr(employee, field, value)
+    db.commit()
+    db.refresh(employee)
+    return employee
+
+
+@router.post("/{employee_id}/reset-password", response_model=EmployeeOut)
+def reset_employee_password(
+    employee_id: int,
+    payload: PasswordReset,
+    claims: dict = Depends(get_current_claims),
+    db: Session = Depends(get_db),
+):
+    """UC-19 (Şirket IT Override) — Company IT, kendi şirketindeki HER çalışanın şifresini
+    hiyerarşiden bağımsız sıfırlayabilir (spec karar 4). Zorunlu-değiştirme bayrağı yok (karar 3),
+    audit log kapsam dışı (bkz. TR dosyalar/PROCESS.md, 2026-08-14).
+    Detay: docs/superpowers/specs/2026-08-14-company-it-account-override-design.md"""
+    require_role(claims, "company_it")
+    employee = db.scalar(
+        select(Employee).where(Employee.id == employee_id, Employee.company_id == claims["company_id"])
+    )
+    if employee is None:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    employee.password_hash = hash_password(payload.new_password)
     db.commit()
     db.refresh(employee)
     return employee
