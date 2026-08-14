@@ -6,6 +6,7 @@ from ..database import get_db
 from ..deps import get_current_claims
 from ..models import Product, Stock, StockRequest
 from ..schemas.stock_request import StockRequestCreate, StockRequestOut
+from ..services.feature_flags import require_feature
 from ..services.notification_reads import clear_low_stock_reads
 
 router = APIRouter(prefix="/api/stock-requests", tags=["stock-requests"])
@@ -17,6 +18,7 @@ def create_stock_request(
 ):
     if claims["role"] != "stock_manager":
         raise HTTPException(status_code=403, detail="Bu işlem sadece Stock Manager tarafından yapılabilir")
+    require_feature(db, claims["company_id"], "merkez_depo_senaryosu")
     if payload.quantity <= 0:
         raise HTTPException(status_code=422, detail="quantity 0'dan büyük olmalı")
 
@@ -69,6 +71,7 @@ def create_stock_request(
 
 @router.get("", response_model=list[StockRequestOut])
 def list_stock_requests(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
+    require_feature(db, claims["company_id"], "merkez_depo_senaryosu")
     rows = db.execute(
         select(StockRequest, Product.name)
         .join(Product, StockRequest.product_id == Product.id)

@@ -64,6 +64,7 @@ class BrandingOut(BaseModel):
     logo_url: str | None = None
     primary_color: str | None = None
     display_name: str
+    enabled_features: list[str] = []
 
 
 class BrandingUpdate(BaseModel):

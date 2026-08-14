@@ -15,6 +15,7 @@ export interface BrandingOut {
   logo_url: string | null;
   primary_color: string | null;
   display_name: string;
+  enabled_features: string[];
 }
 
 export interface BrandingUpdatePayload {

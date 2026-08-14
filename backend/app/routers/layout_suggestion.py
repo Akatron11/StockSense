@@ -15,6 +15,7 @@ from ..schemas.layout_suggestion import (
     LayoutSuggestionItem,
     LayoutSuggestionOut,
 )
+from ..services.feature_flags import require_feature
 from ..services.layout_recommendation import compute_recommendation
 
 router = APIRouter(prefix="/api/reports", tags=["layout-suggestion"])
@@ -27,6 +28,7 @@ def _normalize_pair(product_a_id: int, product_b_id: int) -> tuple[int, int]:
 @router.get("/layout-suggestion", response_model=LayoutSuggestionOut)
 def get_layout_suggestion(claims: dict = Depends(get_current_claims), db: Session = Depends(get_db)):
     require_role(claims, "seller_manager")
+    require_feature(db, claims["company_id"], "layout_onerisi")
 
     branch_id = claims["branch_id"]
     result = compute_recommendation(db, branch_id)
@@ -84,6 +86,7 @@ def apply_layout_suggestion(
     db: Session = Depends(get_db),
 ):
     require_role(claims, "seller_manager")
+    require_feature(db, claims["company_id"], "layout_onerisi")
 
     if payload.product_a_id == payload.product_b_id:
         raise HTTPException(status_code=422, detail="Bir ürün kendisiyle eşleştirilemez")

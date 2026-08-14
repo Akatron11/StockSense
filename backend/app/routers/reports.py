@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_claims
 from ..models import Branch, Product, Region, Return, ReturnItem, Sale, SaleItem, Stock
+from ..services.feature_flags import get_enabled_features
 from ..schemas.report import (
     BreakdownItem,
     NeverSoldItem,
@@ -382,8 +383,10 @@ def get_sales_report(
 
     # UC-16 (net kâr marjı) sadece branch_manager/region_manager/general_manager'a açık — seller_manager
     # UC-13 (satış raporu) için bu endpoint'i kullanıyor ama kâr marjı alanlarını görmemeli (SRS çapraz
-    # kontrolünde bulundu, 2026-08-03).
-    can_see_margin = claims["role"] != "seller_manager"
+    # kontrolünde bulundu, 2026-08-03). Feature flag enforcement (2026-08-14) — ayrıca kpi_modulu açık olmalı.
+    can_see_margin = claims["role"] != "seller_manager" and "kpi_modulu" in get_enabled_features(
+        db, claims["company_id"]
+    )
 
     return SalesReportOut(
         scope=scope,

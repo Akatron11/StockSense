@@ -9,6 +9,7 @@ export interface NavItemConfig {
   variant?: "go"; // "Kasaya geç" gibi vurgulu/ayrık aksiyon öğeleri için
   path?: string; // henüz ekranı kurulmayan öğelerde yok — o zamana kadar tıklanamaz düz metin kalır
   icon: IconName;
+  requiresFeature?: string; // dolu ise, enabledFeatures'da yoksa öğe listelenmez (feature flag enforcement)
 }
 
 export interface NavGroupConfig {
@@ -72,7 +73,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
     {
       items: [
         { label: "nav.stockList", path: "/", icon: "stock" },
-        { label: "nav.stockRequest", path: "/stock-request", icon: "stockRequest" },
+        { label: "nav.stockRequest", path: "/stock-request", icon: "stockRequest", requiresFeature: "merkez_depo_senaryosu" },
         { label: "nav.stockAreaLayout", path: "/stock-layout", icon: "layout" },
       ],
     },
@@ -83,7 +84,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
         { label: "nav.home", path: "/", icon: "home" },
         { label: "nav.priceManagement", path: "/price", icon: "price" },
         { label: "nav.salesReports", path: "/reports", icon: "reports" },
-        { label: "nav.layoutSuggestion", path: "/layout", icon: "layout" },
+        { label: "nav.layoutSuggestion", path: "/layout", icon: "layout", requiresFeature: "layout_onerisi" },
       ],
     },
   ],
@@ -119,8 +120,14 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
   ],
 };
 
-export function navForRole(role: string): NavGroupConfig[] {
-  return ROLE_NAV[role] ?? [];
+export function navForRole(role: string, enabledFeatures?: string[]): NavGroupConfig[] {
+  const groups = ROLE_NAV[role] ?? [];
+  if (!enabledFeatures) return groups;
+  const enabled = new Set(enabledFeatures);
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.requiresFeature || enabled.has(item.requiresFeature)),
+  }));
 }
 
 // Her rolün "ana sayfası" farklı bir nav öğesine karşılık gelir (stock_manager için "Stok listesi",

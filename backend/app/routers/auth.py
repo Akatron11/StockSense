@@ -8,6 +8,7 @@ from ..models import Company, CompanyBranding, Employee
 from ..schemas.auth import LoginRequest, TokenResponse, UserOut
 from ..schemas.company import BrandingOut
 from ..security import create_access_token, verify_password
+from ..services.feature_flags import get_enabled_features
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -17,11 +18,17 @@ def get_login_branding(company: Company | None = Depends(get_company_from_host),
     """Madde 16 — Login ekranı, subdomain'e göre müşterinin markasıyla açılır (auth'suz, public)."""
     if company is None:
         # admin subdomain — vendor_manager girişi, müşteri markası yok.
-        return BrandingOut(logo_url=None, primary_color=None, display_name="StockSense")
+        return BrandingOut(logo_url=None, primary_color=None, display_name="StockSense", enabled_features=[])
+    enabled_features = list(get_enabled_features(db, company.id))
     branding = db.get(CompanyBranding, company.id)
     if branding is None:
-        return BrandingOut(logo_url=None, primary_color=None, display_name=company.name)
-    return BrandingOut(logo_url=branding.logo_url, primary_color=branding.primary_color, display_name=branding.display_name)
+        return BrandingOut(logo_url=None, primary_color=None, display_name=company.name, enabled_features=enabled_features)
+    return BrandingOut(
+        logo_url=branding.logo_url,
+        primary_color=branding.primary_color,
+        display_name=branding.display_name,
+        enabled_features=enabled_features,
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -39,6 +46,10 @@ def login(
         company = db.scalar(select(Company).where(Company.subdomain == payload.subdomain.strip().lower()))
         if company is None:
             raise HTTPException(status_code=404, detail="Unknown company subdomain")
+        # Feature flag enforcement (2026-08-14) — mobil istemci sinyali (body'de subdomain) + kapalı
+        # mobil_app kombinasyonu, kullanıcı doğrulamasından (parola karşılaştırma) önce reddedilir.
+        if "mobil_app" not in get_enabled_features(db, company.id):
+            raise HTTPException(status_code=403, detail="Bu özellik şirketiniz için kapalı: mobil_app")
     else:
         company = resolve_company_from_host(host, db)
 

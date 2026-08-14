@@ -35,6 +35,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [brandName, setBrandName] = useState<string | null>(null);
+  const [enabledFeatures, setEnabledFeatures] = useState<string[] | undefined>(undefined);
   const [notifications, setNotifications] = useState<NotificationsOut | null>(null);
   const [notifError, setNotifError] = useState<string | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -58,6 +59,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
         applyBrandColor(b.primary_color);
         setLogoUrl(b.logo_url);
         setBrandName(b.display_name);
+        setEnabledFeatures(b.enabled_features);
       })
       .catch(() => applyBrandColor(null));
   }, []);
@@ -87,7 +89,7 @@ export function AppShell({ pageTitle, children }: AppShellProps) {
   }, []);
 
   const roleText = user ? roleLabel(t, user.role) : "";
-  const navGroups = user ? navForRole(user.role) : [];
+  const navGroups = user ? navForRole(user.role, enabledFeatures) : [];
   const notifCount = notifications ? notifications.low_stock.length + notifications.expiring.length : 0;
   const canUseCurrency = user ? CURRENCY_ROLES.has(user.role) : false;
 
