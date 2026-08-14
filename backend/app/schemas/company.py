@@ -1,6 +1,6 @@
 import re
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..deps import VENDOR_ADMIN_SUBDOMAIN
 
@@ -8,20 +8,35 @@ from ..deps import VENDOR_ADMIN_SUBDOMAIN
 # storage kurmaya değmeyecek ölçek). Ham dosya boyutu sınırı ~300KB (base64 karakter sayısı ~1.37 kat).
 MAX_LOGO_DATA_URL_LENGTH = 410_000
 
-SUBDOMAIN_PATTERN = re.compile(r"^[a-z0-9-]{1,63}$")
+# DNS-label-safe: baş/son karakter alfanümerik olmalı, tire sadece ortada olabilir (maks. 63 karakter).
+SUBDOMAIN_PATTERN = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 RESERVED_SUBDOMAINS = {VENDOR_ADMIN_SUBDOMAIN}
+
+# companies.name DB kolonu String(150) (bkz. app/models/tenancy.py) — DataError yerine 422 için burada
+# da sınırlanıyor.
+COMPANY_NAME_MAX_LENGTH = 150
 
 
 class CompanyCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=COMPANY_NAME_MAX_LENGTH)
     subdomain: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("name boş olamaz")
+        return normalized
 
     @field_validator("subdomain")
     @classmethod
     def validate_subdomain(cls, value: str) -> str:
         normalized = value.strip().lower()
         if not SUBDOMAIN_PATTERN.match(normalized):
-            raise ValueError("subdomain sadece küçük harf, rakam ve tire içerebilir (maks. 63 karakter)")
+            raise ValueError(
+                "subdomain sadece küçük harf, rakam ve tire içerebilir; tire ile başlayamaz/bitemez (maks. 63 karakter)"
+            )
         if normalized in RESERVED_SUBDOMAINS:
             raise ValueError(f"'{normalized}' rezerve bir subdomain, kullanılamaz")
         return normalized
