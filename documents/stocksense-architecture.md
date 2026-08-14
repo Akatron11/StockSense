@@ -281,7 +281,7 @@ By the end of the project, the system will be designed not for a single customer
 - **Query isolation:** The user's `company_id` (and `branch_id`/`region_id` if applicable) is embedded in the JWT token; all queries pass through a common middleware/dependency layer and are automatically filtered by this scope — writing a separate `company_id` filter in every endpoint individually is not relied upon; it is guaranteed at the infrastructure level.
 - **Feature flag system:** A new `company_features` table — tracks which modules (layout recommendation, mobile app, central-warehouse scenario, KPI module, etc.) are active for which customer. The vendor marks this from a panel during new-customer onboarding. **Schema finalized (during the SRS Class Diagram):** one row per feature (`company_id, feature_name, enabled`) — adding a new feature does not require a schema change, only new rows are added.
   > **TODO:** How the mobile companion app will be represented via `company_features` (a single "mobile access" feature, or separate features per mobile screen/report) — will be revisited once mobile scope is finalized (see the mobile TODO note at the top of the SRS `stocksense-srs-tr.md`).
-- **Role set:** Stays fixed, only toggled on/off per customer — defining a new role type at runtime is not a feature (it can be developed manually later based on feedback). Fixed set: Cashier, Stock Manager, Seller Manager, Branch Manager, Region Manager, General Manager, Operations Chief, Company IT, Vendor Manager — plus five **deputy** roles: Deputy Seller Manager, Deputy Stock Manager, Deputy Branch Manager, Deputy Region Manager, Deputy General Manager. Deputy roles have **exactly the same authority** as their principal (e.g., Deputy Stock Manager ↔ Stock Manager) — there is no separate "acting/delegated status" tracking in the system, both can perform the same actions at any time. Goal: uninterrupted coverage when the principal is on leave/sick.
+- **Role set:** Stays fixed — defining a new role type at runtime is not a feature (it can be developed manually later based on feedback). Per-customer "on/off" is **not** a separate config/toggle like `company_features` (settled 2026-08-14, UC-22 review): a role counts as active for a customer purely by inference — if at least one active employee holds that role, the role is active. The Vendor Manager controls this indirectly, by deciding which roles to create employees for during Day-0 setup / employee management; there is no dedicated "role on/off" screen. Fixed set: Cashier, Stock Manager, Seller Manager, Branch Manager, Region Manager, General Manager, Operations Chief, Company IT, Vendor Manager — plus five **deputy** roles: Deputy Seller Manager, Deputy Stock Manager, Deputy Branch Manager, Deputy Region Manager, Deputy General Manager. Deputy roles have **exactly the same authority** as their principal (e.g., Deputy Stock Manager ↔ Stock Manager) — there is no separate "acting/delegated status" tracking in the system, both can perform the same actions at any time. Goal: uninterrupted coverage when the principal is on leave/sick.
 - **Visual identity:** A new `company_branding` table (logo url, primary color, business name) — a customer-specific theme.
 
 ## 11. Stock Source — Branch Stock and Central Warehouse (Item 3 Update)
@@ -317,7 +317,7 @@ The Operations Chief manages the shift hours and days off of **all staff** at th
 
 ## 14. Notification Target Principle and Expiry (Best-Before Date) Notification
 
-**General principle:** Role-based notifications (expiry, low stock, etc.) do not go to a fixed account, but to **the most specific/lowest active role that actually holds this authority at that moment**. Because of the role on/off system in item 10, different roles may be active for each customer — in a large chain this goes directly to the Stock Manager, while in a small business without a Stock Manager account, it goes directly to the Branch Manager/owner due to the permission-inheritance chain (item 2). This principle applies both to the expiry notification and to the low-stock notification in item 6.
+**General principle:** Role-based notifications (expiry, low stock, etc.) do not go to a fixed account, but to **the most specific/lowest active role that actually holds this authority at that moment**. "Active" here is the same by-inference definition from item 10 (at least one active employee in that role) — since different customers staff different roles, in a large chain this goes directly to the Stock Manager, while in a small business without a Stock Manager account, it goes directly to the Branch Manager/owner due to the permission-inheritance chain (item 2). This escalation chain (`services/notification_targets.py`) is, in fact, the only place in the codebase that reads role-activity-by-inference. This principle applies both to the expiry notification and to the low-stock notification in item 6.
 
 **Expiry flow:** When a product's expiry date approaches, the notification reaches the target role via the principle above. The Operations Chief (if active at that business) is **always** included in the process as a fixed step — they work together with whoever received the notification on the discount decision and shelf placement. The Operations Chief is not the first party to receive the notification, since they fall outside the inheritance chain (item 2) and thus cannot be a stock/expiry notification target.
 
@@ -394,9 +394,26 @@ required) in one sitting via a step-by-step wizard (`/day0-setup`). Each step is
 call; a mid-wizard failure can be retried without recreating already-succeeded rows (in-session
 recovery only — if the wizard tab is closed/reloaded before completion, there is currently no way
 to resume or inspect the partially-created tenant from within the app, a known open limitation).
-This is item 1 of a four-item sequence — **Day-0 → Company IT panel → account-recovery/UC-19 →
-feature-flag enforcement** — the remaining three items are still future work (see "Open Decisions"
-below).
+This was item 1 of a four-item sequence — **Day-0 → Company IT panel → account-recovery/UC-19 →
+feature-flag enforcement** — all four items are now complete (feature-flag enforcement, the last of
+the four, landed 2026-08-14; see below).
+
+**Feature-flag enforcement — implemented (2026-08-14).** `company_features` rows existed (UC-22,
+Vendor Manager CRUD) and could be toggled well before anything checked them — until this item, every
+customer effectively had every feature regardless of the flag's value. A shared `require_feature()`
+helper (`services/feature_flags.py`, same shape as `deps.py::require_role`) closes that gap for all
+four known features: `layout_onerisi` gates `layout_suggestion.py`'s two endpoints, `merkez_depo_senaryosu`
+gates `stock_requests.py`'s two endpoints, `kpi_modulu` gates the profit-margin fields on
+`GET /api/reports/sales`, and `mobil_app` gates mobile login (`POST /api/auth/login`, rejected before
+the password check when the request carries a `subdomain` body field and the target company has the
+flag off — web login via `Host` header is unaffected). This settles item 10's open TODO on how the
+mobile app is represented in `company_features`: it stayed a single all-or-nothing flag rather than
+separate per-screen flags. The frontend learns which features are on from
+`enabled_features` on the existing `GET /api/auth/branding` response (no new endpoint — `AppShell`
+already fetches this for the brand color/logo) and hides the corresponding nav item; there is no
+dedicated "feature disabled" screen for direct URL access, the page's existing generic error state
+handles the resulting 403, and there is no live push — a session only sees a flag change on its next
+branding fetch (page reload/re-login).
 
 **Mobile companion app — fully implemented.** The React Native (Expo) app described at a high
 level in item 8 is complete: read-only access for the five manager roles (Seller/Stock/Branch/
@@ -419,15 +436,6 @@ decided:
 - **Deputy/helper roles** (Deputy Branch Manager, Deputy Stock Manager, etc., mentioned in item
   10) were never actually added to the role set or the `role` value table in item 9 — they remain
   a named-but-unimplemented idea.
-- **How the mobile app is represented in `company_features`** (item 10's TODO) — the `mobil_app`
-  feature flag exists in the known-features list, but nothing currently enforces it; every
-  customer effectively has mobile access regardless of the flag's value. This is true of every
-  feature flag today, not unique to mobile — see the next point.
-- **Feature-flag enforcement.** `company_features` rows exist and can be toggled by the Vendor
-  Manager (UC-22), but no endpoint currently checks them before serving a request — the flags are
-  presentational only. Real enforcement is planned as the last step of a four-item sequence
-  (Day-0 → Company IT panel → account-recovery/UC-19 → feature-flag enforcement), decided but not
-  started.
 - **UC-19 (Company IT account override / password reset)** — designed at the architecture level
   (item 6, "Company IT always has override authority") but the corresponding endpoint has never
   been implemented; deliberately out of scope until the Day-0 sequence above reaches it.

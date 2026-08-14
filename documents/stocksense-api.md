@@ -102,21 +102,24 @@ General conventions were decided first, then each module (matching the Component
 #### `GET /api/auth/branding`
 Public, no token required — resolves the company from the `Host` header subdomain and returns the
 login screen's tenant branding (logo/color/name) so unauthenticated users see the customer's branding
-before login. The `admin` subdomain (Vendor Manager) gets generic "StockSense" branding.
+before login. The `admin` subdomain (Vendor Manager) gets generic "StockSense" branding. Also carries
+`enabled_features` (feature flag enforcement, implemented 2026-08-14) — the frontend's `AppShell` reads
+this on every mount to decide which feature-gated nav items to show; there is no separate endpoint for
+this, deliberately reusing what `AppShell` already fetches for the brand color/logo.
 ```json
-{ "logo_url": "data:image/png;base64,...", "primary_color": "#1E40AF", "display_name": "Acme Retail" }
+{ "logo_url": "data:image/png;base64,...", "primary_color": "#1E40AF", "display_name": "Acme Retail", "enabled_features": ["layout_onerisi", "kpi_modulu"] }
 ```
-- **200** always (falls back to defaults if no `CompanyBranding` row exists). **400** — missing `Host`. **404** — unknown subdomain.
+- **200** always (falls back to defaults if no `CompanyBranding` row exists; `enabled_features: []` for the `admin` subdomain). **400** — missing `Host`. **404** — unknown subdomain.
 
 #### `POST /api/auth/login`
-Public. Company resolved from `subdomain` in the request body if present (mobile), otherwise from `Host` (web); no company / `admin` subdomain → tenant-less `vendor_manager` login.
+Public. Company resolved from `subdomain` in the request body if present (mobile), otherwise from `Host` (web); no company / `admin` subdomain → tenant-less `vendor_manager` login. Feature flag enforcement (2026-08-14) — when `subdomain` is present in the body (the mobile-client signal) and the target company's `mobil_app` feature is off, the request is rejected *before* the username/password are even checked; a web login (no `subdomain` in the body, resolved from `Host` instead) is never affected by this flag.
 ```json
 // request
 { "username": "jdoe", "password": "secret123", "subdomain": "acme" }
 // response
 { "access_token": "eyJhbGciOi...", "user": { "id": 12, "full_name": "Jane Doe", "role": "cashier" } }
 ```
-- **200**. **404** — unknown subdomain, or Host-based resolution failure. **401** — unknown username, no password set, or wrong password.
+- **200**. **404** — unknown subdomain, or Host-based resolution failure. **401** — unknown username, no password set, or wrong password. **403** — mobile login (`subdomain` in body) while `mobil_app` is disabled for that company.
 
 #### `GET /api/auth/me`
 Any authenticated employee — returns the caller's own identity from the JWT claims.
@@ -264,20 +267,20 @@ recreated on retry — in-session only, does not survive a page reload).
 { "product_id": 9, "branch_id": 3, "quantity": 40, "low_stock_threshold": 10, "price_override": null, "zone_id": 2, "product_name": "Süt 1L", "sku": "SKU-MILK-01", "best_before_date": "2026-12-31", "effective_price": 45.90 }
 ```
 
-**`stock_requests.py`** — central warehouse is unlimited, requests are always instantly fulfilled (no approve/reject workflow):
-- **`POST /api/stock-requests`** — role `stock_manager`; upsert/increment `Stock.quantity` + audit row, atomic. 201/403/422 (`quantity <= 0`)/404.
+**`stock_requests.py`** — central warehouse is unlimited, requests are always instantly fulfilled (no approve/reject workflow). Both endpoints require the `merkez_depo_senaryosu` feature flag to be on for the caller's company (feature flag enforcement, 2026-08-14 — see `services/feature_flags.py::require_feature` below):
+- **`POST /api/stock-requests`** — role `stock_manager`; upsert/increment `Stock.quantity` + audit row, atomic. 201/403 (wrong role, or `merkez_depo_senaryosu` disabled)/422 (`quantity <= 0`)/404.
   ```json
   // request  { "product_id": 9, "quantity": 20 }
   // response { "id": 55, "product_id": 9, "product_name": "Süt 1L", "branch_id": 3, "quantity": 20, "requested_by": 12, "created_at": "2026-08-13T09:00:00Z" }
   ```
-- **`GET /api/stock-requests`** — any authenticated employee, scoped to own branch. 200.
+- **`GET /api/stock-requests`** — any authenticated employee, scoped to own branch. 200. **403** — `merkez_depo_senaryosu` disabled for the caller's company (this is the only role-unrestricted read endpoint that got a non-role gate; see the "no role restriction" bullet below).
 
 **`layout_zones.py`** (UC-15 SHOULD, Seller Manager's shelf/zone editor, role `seller_manager` on all 4):
 - `GET /api/layout-zones` — zones with assigned products. `POST /api/layout-zones` (201, `{"name","width","height"}`, server sets `x=0,y=0`). `PATCH /api/layout-zones/{id}` (partial update). `DELETE /api/layout-zones/{id}` (204).
 
 **`stock_zones.py`** (Stock Manager's independent floor-plan editor, no product assignment, role `stock_manager` on all 4) — identical CRUD shape to `layout_zones.py` but no `products` field on the response.
 
-**`layout_suggestion.py`** (mounted under `/api/reports`, UC-15, role `seller_manager`):
+**`layout_suggestion.py`** (mounted under `/api/reports`, UC-15, role `seller_manager`). Both endpoints also require the `layout_onerisi` feature flag (feature flag enforcement, 2026-08-14), checked right after the role check:
 - **`GET /api/reports/layout-suggestion`** — co-occurrence/apriori suggestions for the caller's branch, enriched with each product's current zone + whether the pair was already applied.
   ```json
   {
@@ -285,7 +288,8 @@ recreated on retry — in-session only, does not survive a page reload).
     "suggestions": [{ "product_a_id": 9, "product_a_name": "Süt 1L", "product_a_zone_id": 2, "product_b_id": 14, "product_b_name": "Ekmek", "product_b_zone_id": null, "score": 0.42, "applied": false, "applied_at": null, "applied_by": null }]
   }
   ```
-- **`POST /api/reports/layout-suggestion/apply`** — upsert on the normalized pair. Request `{"product_a_id": 9, "product_b_id": 14}`. 200/422 (`a==b`)/404.
+  - **200**. **403** — not `seller_manager`, or `layout_onerisi` disabled for the caller's company.
+- **`POST /api/reports/layout-suggestion/apply`** — upsert on the normalized pair. Request `{"product_a_id": 9, "product_b_id": 14}`. 200/403 (same as above)/422 (`a==b`)/404.
 
 ### 4. Reporting (`reports.py`)
 
@@ -301,7 +305,7 @@ Role: `branch_manager`, `region_manager`, `general_manager`. Per-product sales t
 - **200**. **403** — role not allowed. **422** — invalid `granularity`. **404** — product not found, or drill-down `branch_id`/`region_id` outside caller's scope.
 
 #### `GET /api/reports/sales?days=&branch_id=&region_id=`
-Role: `branch_manager`, `seller_manager`, `region_manager`, `general_manager`. Aggregate report — totals, trend, top/least-selling, never-sold, low-stock count, optional region/branch breakdown, over a fixed day window (`7`/`30`/`90`). This single endpoint absorbs what was originally planned as three separate endpoints (see "Known Design vs. Implementation Differences" below). **`seller_manager` never sees profit-margin fields** (forced `null`/`0.0`) — a deliberate business rule enforced here, cross-checked against the SRS during a code review pass.
+Role: `branch_manager`, `seller_manager`, `region_manager`, `general_manager`. Aggregate report — totals, trend, top/least-selling, never-sold, low-stock count, optional region/branch breakdown, over a fixed day window (`7`/`30`/`90`). This single endpoint absorbs what was originally planned as three separate endpoints (see "Known Design vs. Implementation Differences" below). **`seller_manager` never sees profit-margin fields** (forced `null`/`0.0`) — a deliberate business rule enforced here, cross-checked against the SRS during a code review pass. Feature flag enforcement (2026-08-14) — the same top-level `profit_margin_pct`/`profit_margin_amount`/`cost_data_coverage_pct` fields are *also* forced to `null`/`0.0` when the caller's company has the `kpi_modulu` feature disabled, regardless of role (the per-branch/region `profit_margin_pct` inside `breakdown` is a separate, always-computed field not covered by this flag).
 ```json
 {
   "scope": "branch", "scope_label": "Kadıköy", "days": 30, "branch_count": 1, "low_stock_count": 3,
@@ -355,9 +359,9 @@ other. `vendor_manager`'s row is the Day-0 (UC-17) extension — see "companies.
 for the accompanying `POST /api/companies`/`/regions`/`/branches` endpoints and required-field
 rules per target role.
 
-- **`GET /api/employees`** — caller's manageable subordinate set, scoped by branch/region/company. 200/403.
+- **`GET /api/employees?include_inactive=`** — caller's manageable subordinate set, scoped by branch/region/company. `include_inactive` (bool, default `false`, added 2026-08-14) opts into also returning deactivated (`is_active=false`) employees — needed so the frontend can find someone to reactivate, since they otherwise never appear in the default list. 200/403.
 - **`POST /api/employees`** — gated by the table above; `staff` has no username/password; `manager_pin` only for `PIN_APPROVER_ROLES` (`stock_manager`/`seller_manager`/`operations_chief`). 201/403/422/404 (target branch/region outside creator's scope)/409 (username taken).
-- **`PATCH /api/employees/{id}`** — same manageable-set gate; `is_active` can be flipped back to `true` to reactivate. 200/403/404/422.
+- **`PATCH /api/employees/{id}`** — same manageable-set gate (checked with `active_only=False`, so a deactivated employee can still be found and flipped back); `is_active` can be flipped back to `true` to reactivate. 200/403/404/422.
 - **`GET /api/employees/company-wide`** — role `company_it` only; every login-capable employee in the
   caller's company, independent of hierarchy (UC-19, Company IT override). 200/403.
 - **`POST /api/employees/{id}/reset-password`** — role `company_it` only; body `{"new_password": str}`
@@ -386,7 +390,7 @@ All five endpoints: role `vendor_manager` only (logs in via the `admin` subdomai
 
 - **`GET /api/companies`** — all tenant companies. `[{ "id": 1, "name": "Acme Retail", "subdomain": "acme", "is_active": true }]`
 - **`GET /api/companies/{id}/features`** — the fixed 4-item known-feature set (`layout_onerisi`, `mobil_app`, `merkez_depo_senaryosu`, `kpi_modulu`) with enabled state, defaulting `false` if no row exists.
-- **`PUT /api/companies/{id}/features/{feature_name}`** — upsert one flag. Request `{"enabled": true}`. 422 if `feature_name` isn't one of the known four.
+- **`PUT /api/companies/{id}/features/{feature_name}`** — upsert one flag. Request `{"enabled": true}`. 422 if `feature_name` isn't one of the known four. **These flags are enforced elsewhere** (feature flag enforcement, implemented 2026-08-14 — was a no-op setting before that): `layout_onerisi` gates `layout_suggestion.py`, `merkez_depo_senaryosu` gates `stock_requests.py`, `kpi_modulu` gates the profit-margin fields on `GET /api/reports/sales`, `mobil_app` gates mobile login on `POST /api/auth/login`. See `services/feature_flags.py::require_feature` and the per-endpoint notes above. There is no live push when a flag changes — an already-open session only picks up the new state on its next `GET /api/auth/branding` fetch (page reload/re-login), same as brand color/logo.
 - **`GET /api/companies/{id}/branding`** / **`PUT /api/companies/{id}/branding`** — upsert; logo stored as a base64 `data:` URL directly in the DB (no object storage at this scale). `PUT` 422s if `logo_url` doesn't start with `data:image/` or exceeds ~300KB.
 
 All five: 403 for any non-`vendor_manager`; 404 for an unknown `company_id`.
@@ -408,7 +412,8 @@ Role: `branch_manager`, `region_manager`, `general_manager`. TRY→{USD,EUR,GBP}
 - **Upserts, not separate create endpoints** — `PATCH /api/stock/{product_id}`, `POST /api/stock-requests`, `PUT /api/shifts/{employee_id}`, `PUT /api/companies/{id}/features/{feature_name}`, `PUT /api/companies/{id}/branding`, and `POST /api/reports/layout-suggestion/apply` all create-or-update in one call.
 - **Stale notification-read cleanup, applied independently in three places** — `PATCH /api/stock`, `POST /api/stock-requests`, and `PATCH /api/products/{id}` each clear stale low-stock/expiring "read" marks when their action resolves the underlying condition (a bug found and fixed during a whole-branch review — a mark could otherwise survive past the condition it was about, hiding a real re-occurrence).
 - **`POST /api/returns/{return_id}/complete` deliberately has no role check** — authorization is branch membership + a correct manager PIN, not the caller's own role, matching the architecture's "any eligible approver on the floor, not a single named person" design.
-- **No role restriction at all** on several read endpoints (any authenticated employee): `GET /api/products*`, `GET/PATCH /api/stock`, `GET /api/stock-requests`, `GET/POST /api/notifications*`, `GET /api/auth/me`.
+- **No role restriction at all** on several read endpoints (any authenticated employee): `GET /api/products*`, `GET/PATCH /api/stock`, `GET /api/stock-requests`, `GET/POST /api/notifications*`, `GET /api/auth/me`. (`GET /api/stock-requests` is still role-unrestricted but is gated by the `merkez_depo_senaryosu` feature flag, below.)
+- **Feature flags, enforced via a shared `require_feature()` helper** (`services/feature_flags.py`, same shape as `deps.py::require_role` — implemented 2026-08-14, the flags existed in the DB/CRUD for a while before anything actually checked them): `layout_onerisi` → `layout_suggestion.py`, `merkez_depo_senaryosu` → `stock_requests.py`, `kpi_modulu` → profit-margin fields on `GET /api/reports/sales`, `mobil_app` → mobile login on `POST /api/auth/login`. Backend 403 is the real boundary; the frontend additionally hides the corresponding nav item (via `enabled_features` on `GET /api/auth/branding`) so a user doesn't click into a dead end, but there's no dedicated "feature disabled" screen for someone who navigates to the URL directly — the page's existing generic error state (e.g. "could not load") is what's shown.
 
 ---
 
