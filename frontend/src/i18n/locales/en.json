@@ -438,6 +438,16 @@
   "rangeSelector": {
     "days": "{{count}} days"
   },
+  "accountOverride": {
+    "title": "Account override",
+    "scopeDesc": "Scope: company-wide (hierarchy-independent, every role) — password reset only",
+    "loadError": "Could not load the employee list.",
+    "resetPassword": "Reset password",
+    "modalTitle": "{{name}} — reset password",
+    "newPassword": "New password",
+    "resetHint": "Company IT sets the new password directly — the user is not forced to change it on next login.",
+    "resetFailed": "Could not reset the password."
+  },
   "day0": {
     "stepIndicator": "Step {{step}} / {{total}}",
     "companyName": "Company name",

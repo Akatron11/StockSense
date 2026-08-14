@@ -100,7 +100,7 @@ export const ROLE_NAV: Record<string, NavGroupConfig[]> = {
   company_it: [
     {
       items: [
-        { label: "nav.accountOverride", icon: "override" },
+        { label: "nav.accountOverride", path: "/account-override", icon: "override" },
         { label: "nav.newTopAccount", path: "/employees", icon: "newAccount" },
       ],
     },

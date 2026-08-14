@@ -438,6 +438,16 @@
   "rangeSelector": {
     "days": "{{count}} gün"
   },
+  "accountOverride": {
+    "title": "Hesap override",
+    "scopeDesc": "Kapsam: şirket geneli (hiyerarşiden bağımsız, her rol) — sadece şifre sıfırlama",
+    "loadError": "Çalışan listesi alınamadı.",
+    "resetPassword": "Şifre sıfırla",
+    "modalTitle": "{{name}} — şifre sıfırla",
+    "newPassword": "Yeni şifre",
+    "resetHint": "Company IT yeni şifreyi kendisi belirler — kullanıcı bir sonraki girişte değiştirmeye zorlanmaz.",
+    "resetFailed": "Şifre sıfırlanamadı."
+  },
   "day0": {
     "stepIndicator": "Adım {{step}} / {{total}}",
     "companyName": "Şirket adı",

@@ -12,6 +12,7 @@ import { StockAreaLayoutPage } from "./pages/StockAreaLayoutPage";
 import { LayoutSuggestionPage } from "./pages/LayoutSuggestionPage";
 import { ReportsDetailPage } from "./pages/ReportsDetailPage";
 import { EmployeeManagementPage } from "./pages/EmployeeManagementPage";
+import { AccountOverridePage } from "./pages/AccountOverridePage";
 import { StaffRegistrationPage } from "./pages/StaffRegistrationPage";
 import { ShiftCalendarPage } from "./pages/ShiftCalendarPage";
 import { Day0SetupPage } from "./pages/Day0SetupPage";
@@ -84,6 +85,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmployeeManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account-override"
+            element={
+              <ProtectedRoute>
+                <AccountOverridePage />
               </ProtectedRoute>
             }
           />
