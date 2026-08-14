@@ -1,0 +1,49 @@
+product_name,category,default_price
+Whole Milk 1L,Dairy,45.90
+Greek Yogurt 500g,Dairy,38.50
+Cheddar Cheese 400g,Dairy,89.90
+White Bread Loaf,Bakery,15.90
+Croissant,Bakery,22.50
+Sourdough Baguette,Bakery,18.90
+Sliced Turkey Breast 200g,Deli,64.90
+Salami 150g,Deli,54.90
+Green Olives 400g,Deli,74.90
+Frozen Pizza,Frozen Food,89.90
+Frozen Peas 500g,Frozen Food,34.90
+Vanilla Ice Cream 1L,Frozen Food,79.90
+Ground Beef 500g,Meat,159.90
+Chicken Breast 1kg,Meat,189.90
+Lamb Chops 500g,Meat,249.90
+Bananas 1kg,Produce,29.90
+Tomatoes 1kg,Produce,24.90
+Red Apples 1kg,Produce,27.90
+Potato Chips 150g,Snacks,44.90
+Milk Chocolate Bar 100g,Snacks,39.90
+Mixed Nuts 200g,Snacks,99.90
+Cola 1.5L,Beverages,34.90
+Orange Juice 1L,Beverages,44.90
+Sparkling Water 500ml,Beverages,12.90
+Corn Flakes 500g,Breakfast & Pantry,64.90
+Honey 450g,Breakfast & Pantry,149.90
+Spaghetti 500g,Breakfast & Pantry,19.90
+Canned Tomatoes 400g,Canned Goods & Legumes,24.90
+Canned Chickpeas 400g,Canned Goods & Legumes,22.90
+Canned Tuna 150g,Canned Goods & Legumes,39.90
+Baby Diapers Pack,Baby Products,159.90
+Baby Formula 800g,Baby Products,349.90
+Baby Wipes Pack,Baby Products,49.90
+Shampoo 400ml,Personal Care,89.90
+Toothpaste 100ml,Personal Care,54.90
+Body Wash 500ml,Personal Care,74.90
+Paper Towels 4-Pack,Household Supplies,79.90
+Toilet Paper 8-Pack,Household Supplies,89.90
+Trash Bags 30ct,Household Supplies,64.90
+Ground Coffee 250g,Coffee & Tea,129.90
+Black Tea Box 100ct,Coffee & Tea,89.90
+Instant Coffee 200g,Coffee & Tea,149.90
+Dry Dog Food 2kg,Pet Supplies,199.90
+Cat Litter 5kg,Pet Supplies,149.90
+Cat Food Cans 6-Pack,Pet Supplies,89.90
+Dish Soap 750ml,Cleaning Supplies,49.90
+Laundry Detergent 1.5L,Cleaning Supplies,159.90
+Multi-Surface Cleaner 500ml,Cleaning Supplies,44.90
