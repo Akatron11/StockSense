@@ -4,7 +4,13 @@ This file holds the SRS content prepared based on the architectural decisions fi
 
 > Reference: `stocksense-architecture-tr.md` (current architectural decisions), `topic.pdf` (project brief).
 
-> **TODO (postponed):** Whether use cases for the mobile companion app (item 8) will be folded into existing UCs (UC-11, 13, 14, 16 — as read-only mobile access) or will require separate UCs has not been discussed yet — to be revisited once the Use Cases section is complete.
+> **Resolved (2026-08-11):** the mobile companion app scope question above was settled — mobile does **not**
+> get separate UCs; it is read-only mobile access to the same four use cases (UC-11/12 notifications,
+> UC-13 sales report, UC-14 top/least/never-sold report, UC-16 KPI/margin report), plus one small addition
+> (marking a notification read/unread) that only exists because the mobile client needed a way to
+> "dismiss" a notification that UC-11/12 themselves never required on web. Target roles: the five manager
+> roles (Seller/Stock/Branch/Region/General Manager) — Cashier, Company IT, and Vendor Manager are out of
+> scope for mobile. Implemented and shipped (React Native/Expo); see `stocksense-architecture.md` item 18.
 
 > **Section order** follows the components listed in the SRS content list in `stocksense-jira-sprint-plani.md`, except that the initial trio (Introduction, Audience, Scope) has been arranged in this order by user preference: Introduction, Audience, Scope, Use Cases, Component Table, Non-Functional Requirements, Functional Requirements, Diagrams (Class Diagram; the Use Case Diagram is kept directly under its own UC table for readability), Features List.
 
@@ -32,7 +38,12 @@ This document defines the functional and non-functional requirements of the Stoc
 - Staff/shift management
 - Notification system (low stock, expiry)
 - Multi-tenant infrastructure: per-customer feature/role configuration, visual identity (managed by the vendor)
-- Mobile companion app (details TODO — to be discussed separately)
+- Mobile companion app — read-only access to notifications, sales report, top/least/never-sold report, and KPI report for the five manager roles (implemented, see item 8 note above)
+- Store floor-plan visualization and layout-change simulation (SHOULD/COULD extensions of UC-15)
+- Bulk product catalog import from Excel (initial/bulk seeding only)
+- Cross-branch quantity and per-product sales drill-down for Branch/Region/General Manager
+- Multi-currency (TRY→USD/EUR/GBP) conversion widget for Branch/Region/General Manager
+- New-customer onboarding wizard (Day-0 / UC-17) — **implemented**
 
 **Out of scope:**
 - Real payment gateway integration (fully mocked)
@@ -279,7 +290,7 @@ VendM --> UC23
 | Backend API | All business logic, endpoints, authorization checks | Python + FastAPI | Item 8 |
 | Database | Persistent data layer | PostgreSQL + SQLAlchemy (ORM) | Item 8, 9 |
 | Web/POS Frontend | Cashier POS screen + manager dashboards | React | Item 8 |
-| Mobile Companion App | Read-only mobile access (details TODO) | React Native | Item 8 |
+| Mobile Companion App | Read-only mobile access — notifications, sales report, top/least/never-sold report, KPI report (implemented) | React Native (Expo) | Item 8 |
 | Analytics Module | Co-occurrence counting / Apriori association-rule mining | pandas + mlxtend | Item 7 |
 | Auth & Tenant-Scoping Middleware | JWT verification + automatically filtering every query by `company_id`/`branch_id`/`region_id` scope | FastAPI middleware/dependency | Item 8, 10 |
 | Notification Module | Routing low-stock and expiry notifications to the target role | Inside the Backend API | Item 6, 14 |
@@ -507,4 +518,5 @@ Company "1" -- "1" CompanyBranding
 - **Reporting & Layout:** Sales reports (selectable date range), best/worst/never-sold product report, co-occurrence/Apriori-based shelf layout recommendation, net profit margin (KPI) report.
 - **Account & Staff:** Hierarchical account creation, Company IT override, login-less staff records, shift management.
 - **Multi-Tenant:** Per-customer feature/role toggling, visual identity customization.
-- **Mobile:** Read-only companion app (details TODO).
+- **Mobile:** Read-only companion app for the five manager roles — notifications (with read/unread tracking), sales report, top/least/never-sold report, KPI report.
+- **Later additions (post-initial SRS):** store floor-plan visualization + layout simulation score, bulk Excel product import, cross-branch quantity/sales drill-down, multi-currency conversion widget, new-customer onboarding wizard (Day-0/UC-17).

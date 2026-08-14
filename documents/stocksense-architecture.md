@@ -169,7 +169,7 @@ Design process: proceeded from small to large (starting with the question "would
 
 ```
 products
-  id (PK), name, sku, category, default_price, cost_price, best_before_date
+  id (PK), company_id (FK), name, sku, category, default_price, cost_price, best_before_date
 
 stock
   product_id (FK), branch_id (FK), quantity, low_stock_threshold, price_override (nullable)
@@ -223,7 +223,7 @@ The abstract schema in item 9 was refined with the following concrete decisions 
 **Timestamp fields:** `created_at` on all tables; additionally `updated_at` on tables that can be updated (`companies`, `regions`, `branches`, `employees`, `products`, `stock`, `company_features`, `company_branding`). Immutable event records (`sales`, `sale_items`, `shifts`) do not get `updated_at`.
 
 **Unique constraint / index plan:**
-- `products.sku` → UNIQUE (item 15 — uniqueness for barcode/manual lookup).
+- `products (company_id, sku)` → composite UNIQUE (item 15 — uniqueness for barcode/manual lookup, scoped to the company). Not `sku` alone — a `products.company_id` column was missing from the very first schema pass (item 4 already called the catalog "company-level," but the column itself was overlooked); this was caught and fixed during implementation (2026-07-27) once it was noticed that one tenant could see/edit another tenant's products.
 - `employees (company_id, username)` → composite UNIQUE, `username` alone is not unique (item 16 — username unique within a company).
 - `sale_items.sale_id`, `sale_items.product_id` → index (for reporting/co-occurrence JOIN/GROUP BY).
 - `sales (branch_id, sale_date)` → composite index (for date-range + branch-based report queries, item 5).
@@ -341,8 +341,93 @@ Item 10 states that queries are filtered by the `company_id` in the JWT, but did
 
 The interface is **bilingual (TR/EN)**. Language is selected on the Login screen; there is no toggle in the top bar within the system, it can be changed from the user menu. On the implementation side, an i18n library (react-i18next) will be used on React. (The requirement is formalized in the SRS NFRs.)
 
+## 18. Post-Design Additions (Implemented After the Initial Architecture Pass)
+
+The sections above capture the architecture as it was decided before implementation began. The
+items below were designed and built later, during development, and are documented here for
+completeness. The authoritative, code-verified schema for every table (including the ones below)
+lives in `DATABASE_SCHEMA.md` at the repository root — this section explains the *why*, that file
+has the exact columns/types/constraints.
+
+**Store layout floor-plan visualization (SHOULD/COULD of UC-15, item 7).** The MUST-level
+recommendation (co-occurrence/Apriori pair + score) is complemented by two features the original
+brief listed as optional: (a) a visual, free-form floor plan where the Seller Manager draws named
+zones (shelves/aisles) and assigns products to them — new `layout_zones` table (`branch_id, name,
+x, y, width, height`) plus a nullable `stock.zone_id` FK; the recommendation overlay draws a
+dashed connector between zones holding a strongly-related pair; (b) a 0–100 layout score (a
+weighted average of zone distance against the recommendation scores) so a manager can simulate
+moving a zone and see the score change live before committing. A separate `layout_zones`-style
+table, `stock_zones`, gives the Stock Manager an independent zone editor for the storage/back-of-
+house area — deliberately unrelated to the sales-floor `layout_zones` (no product assignment, no
+recommendation overlay, just a name + position + size). A `layout_recommendation_applications`
+table (`branch_id, product_a_id, product_b_id, applied_by, applied_at`, upserted on the pair)
+tracks which suggested pairs a Seller Manager has actually marked "applied," reversing the
+project's initial decision not to keep this kind of record.
+
+**Cross-branch quantity and per-product sales tracking.** Region/General Managers can drill from
+the shared stock list into a per-product, per-branch breakdown (`GET
+/api/stock/product/{id}/branches`) and a per-product sales trend with weekly/monthly/yearly
+granularity and a region→branch drill-down (`GET /api/reports/product-sales/{id}`). Both reuse the
+existing hierarchical scope-resolution logic (item 5) rather than introducing a new authorization
+model.
+
+**Currency conversion widget.** A small utility (`GET /api/currency/rates`, branch/region/general
+manager roles only) that converts a TRY amount into USD/EUR/GBP using a public, key-free exchange
+rate API (Frankfurter/ECB data), cached in memory for one hour. Not part of the original brief or
+architecture — added as a convenience feature during Sprint 6/7 based on user feedback.
+
+**Bulk product import from Excel.** `POST /api/products/import` (General Manager only) accepts an
+`.xlsx` file matching the `ProductCreate` schema, validates every row before writing anything
+(all-or-nothing — a single invalid row rejects the whole file with a per-row error list), capped
+at 2000 rows / 5 MB, synchronous (no background job queue). Scoped to initial/bulk catalog seeding
+only, not to updating existing products. A companion `GET /api/products/import/template` endpoint
+returns a blank template file.
+
+**Day-0 vendor onboarding wizard (UC-17) — implemented (2026-08-14).** The original Account
+Creation flow (item 6) named the Vendor Manager as the Day-0 actor but never specified the
+concrete API/UI. Three new `vendor_manager`-only endpoints (`POST /api/companies` / `/regions` /
+`/branches`) plus an extension of `POST /api/employees` (`CREATABLE_ROLES["vendor_manager"]` now
+covers every role, and `general_manager` can also create `company_it` — bidirectional with the
+pre-existing `company_it → general_manager` direction) let the Vendor Manager bootstrap a brand-new
+tenant (company + region(s) + branch(es) + full role hierarchy, at least one `general_manager`
+required) in one sitting via a step-by-step wizard (`/day0-setup`). Each step is a separate API
+call; a mid-wizard failure can be retried without recreating already-succeeded rows (in-session
+recovery only — if the wizard tab is closed/reloaded before completion, there is currently no way
+to resume or inspect the partially-created tenant from within the app, a known open limitation).
+This is item 1 of a four-item sequence — **Day-0 → Company IT panel → account-recovery/UC-19 →
+feature-flag enforcement** — the remaining three items are still future work (see "Open Decisions"
+below).
+
+**Mobile companion app — fully implemented.** The React Native (Expo) app described at a high
+level in item 8 is complete: read-only access for the five manager roles (Seller/Stock/Branch/
+Region/General Manager — Cashier, Company IT, and Vendor Manager are out of scope), covering
+notifications (with read/unread tracking — a new `notification_reads` table, since notifications
+themselves are a live query, not a stored record), the sales report, the top/least/never-sold
+report, and the KPI/margin report, sharing the same JWT and backend endpoints as the web app (item
+8's "Mobile API integration" principle held exactly as designed). Physical device testing via Expo
+Go was blocked by an SDK version mismatch (the project targets a newer Expo SDK than the public
+Expo Go client currently supports) — a native build via `expo run:android` was the fallback plan.
+
 ---
 
 ## Open Decisions (Not Yet Finalized)
 
-None — all major decisions at the architecture/planning stage have been finalized. Details (e.g., additional fields, indexes, migration order) will be addressed during the implementation phase.
+The bulk of architecture/planning-stage decisions were finalized before implementation, as stated
+above. Since then, a handful of concrete items have been intentionally deferred rather than
+decided:
+
+- **Deputy/helper roles** (Deputy Branch Manager, Deputy Stock Manager, etc., mentioned in item
+  10) were never actually added to the role set or the `role` value table in item 9 — they remain
+  a named-but-unimplemented idea.
+- **How the mobile app is represented in `company_features`** (item 10's TODO) — the `mobil_app`
+  feature flag exists in the known-features list, but nothing currently enforces it; every
+  customer effectively has mobile access regardless of the flag's value. This is true of every
+  feature flag today, not unique to mobile — see the next point.
+- **Feature-flag enforcement.** `company_features` rows exist and can be toggled by the Vendor
+  Manager (UC-22), but no endpoint currently checks them before serving a request — the flags are
+  presentational only. Real enforcement is planned as the last step of a four-item sequence
+  (Day-0 → Company IT panel → account-recovery/UC-19 → feature-flag enforcement), decided but not
+  started.
+- **UC-19 (Company IT account override / password reset)** — designed at the architecture level
+  (item 6, "Company IT always has override authority") but the corresponding endpoint has never
+  been implemented; deliberately out of scope until the Day-0 sequence above reaches it.

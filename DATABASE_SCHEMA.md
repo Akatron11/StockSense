@@ -23,7 +23,9 @@ schema, this file should be regenerated/updated to match.
 the running database. The following constraints were additionally exercised against the live
 Postgres instance (insert/delete attempts inside a transaction, rolled back afterwards — no
 data persisted):
-- `products.sku` UNIQUE — duplicate insert rejected.
+- `products (company_id, sku)` composite UNIQUE — duplicate `sku` within the same company rejected;
+  same `sku` across *different* companies accepted (fixed 2026-07-27, was a single-column UNIQUE
+  that allowed cross-tenant SKU visibility — see `documents/stocksense-architecture.md`).
 - `employees (company_id, username)` composite UNIQUE — duplicate within the same company
   rejected; same username across *different* companies accepted.
 - `uq_employees_vendor_username` partial index — duplicate username among `company_id IS NULL`
@@ -47,18 +49,22 @@ data persisted):
 6. [employees](#employees)
 7. [sales](#sales)
 8. [sale_items](#sale_items)
-9. [shifts](#shifts)
-10. [company_features](#company_features)
-11. [company_branding](#company_branding)
-12. [notification_reads](#notification_reads)
-13. [Entity-Relationship Overview](#entity-relationship-overview)
+9. [returns](#returns)
+10. [return_items](#return_items)
+11. [stock_requests](#stock_requests)
+12. [shifts](#shifts)
+13. [company_features](#company_features)
+14. [company_branding](#company_branding)
+15. [notification_reads](#notification_reads)
+16. [layout_zones](#layout_zones)
+17. [stock_zones](#stock_zones)
+18. [layout_recommendation_applications](#layout_recommendation_applications)
+19. [Entity-Relationship Overview](#entity-relationship-overview)
 
-> **Not (2026-08-13):** Bu dosya, ilk oluşturulduğu tarihten (2026-07-21) sonra eklenen bazı
-> tabloları (`returns`, `return_items`, `stock_requests`, `layout_zones`, `stock_zones`) henüz
-> kapsamıyor — tam yeniden senkronizasyon Sprint 7'nin "son doküman senkronizasyonu" adımına
-> bırakıldı (bkz. `TR dosyalar/PROCESS.md`). `notification_reads` bu review turunda ayrıca
-> eklendi çünkü kodla doğrudan çelişen bir iddiası vardı (`documents/stocksense-api.md`, ayrıca
-> düzeltildi).
+> **Updated 2026-08-13:** this file now covers every table in `backend/app/models/`, including
+> the ones added after the file's initial creation (`returns`, `return_items`, `stock_requests`,
+> `layout_zones`, `stock_zones`, `layout_recommendation_applications`), verified directly against
+> the SQLAlchemy model source (`backend/app/models/sales.py`, `catalog.py`, `layout.py`).
 
 ---
 
@@ -123,7 +129,7 @@ Item 4 (Product Catalog and Pricing) — company-level catalog.
 |---|---|---|---|---|
 | `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
 | `name` | `varchar(150)` | NOT NULL | | |
-| `sku` | `varchar(50)` | NOT NULL | | UNIQUE (`products_sku_key`) — item 15 |
+| `sku` | `varchar(50)` | NOT NULL | | UNIQUE per company (`uq_products_company_sku`) — item 15 |
 | `category` | `varchar(100)` | nullable | | |
 | `default_price` | `numeric(10,2)` | NOT NULL | | |
 | `cost_price` | `numeric(10,2)` | nullable | | for net profit margin, item 12 |
@@ -132,7 +138,7 @@ Item 4 (Product Catalog and Pricing) — company-level catalog.
 | `created_at` | `timestamptz` | NOT NULL | `now()` | |
 | `updated_at` | `timestamptz` | NOT NULL | `now()` | |
 
-**Indexes:** `products_pkey` PK btree (`id`); `products_sku_key` UNIQUE btree (`sku`)
+**Indexes:** `products_pkey` PK btree (`id`); `uq_products_company_sku` UNIQUE btree (`company_id`, `sku`)
 **Referenced by:** `stock.product_id`, `sale_items.product_id`
 
 ---
@@ -148,6 +154,7 @@ Item 3 (Stock Management) — bridge table resolving the `products` ↔ `branche
 | `quantity` | `integer` | NOT NULL | | |
 | `low_stock_threshold` | `integer` | NOT NULL | | |
 | `price_override` | `numeric(10,2)` | nullable | | if null, `products.default_price` applies — item 4 |
+| `zone_id` | `bigint` | nullable | | FK → `layout_zones.id`, `ON DELETE SET NULL` — which store zone this product is shelved in, for the layout recommendation overlay |
 | `created_at` | `timestamptz` | NOT NULL | `now()` | |
 | `updated_at` | `timestamptz` | NOT NULL | `now()` | |
 
@@ -220,6 +227,71 @@ Item 9 — sale line item; data source for co-occurrence/Apriori calculation (it
 
 **Indexes:** `sale_items_pkey` PK btree (`id`); `ix_sale_items_sale_id` btree (`sale_id`); `ix_sale_items_product_id` btree (`product_id`)
 **Check constraints:** `ck_sale_items_quantity_positive` (`quantity > 0`); `ck_sale_items_line_total_non_negative` (`line_total >= 0`)
+
+---
+
+## returns
+
+Item 6 (Return/Exchange — Manager PIN Approval). A deliberately separate table from `sales` —
+unlike a sale, a return has a two-stage lifecycle (`pending` → `completed`, gated by PIN
+approval at completion time, not at initiation).
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `sale_id` | `bigint` | NOT NULL | | FK → `sales.id` |
+| `initiated_by` | `bigint` | NOT NULL | | FK → `employees.id` (cashier who started it) |
+| `status` | `varchar(20)` | NOT NULL | `'pending'` | `pending` \| `completed` |
+| `net_amount` | `numeric(10,2)` | NOT NULL | | negative = refund to customer, positive = customer owes the difference (exchange) |
+| `completed_by` | `bigint` | nullable | | FK → `employees.id` (PIN approver) |
+| `completed_at` | `timestamptz` | nullable | | |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | |
+| `updated_at` | `timestamptz` | NOT NULL | `now()` | |
+
+**Indexes:** `returns_pkey` PK btree (`id`)
+**Referenced by:** `return_items.return_id`
+
+---
+
+## return_items
+
+Item 6 — return line item. The `direction` column distinguishes returned products (`returned`)
+from newly given products in an exchange (`new`) within the same table.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `return_id` | `bigint` | NOT NULL | | FK → `returns.id` |
+| `product_id` | `bigint` | NOT NULL | | FK → `products.id` |
+| `quantity` | `integer` | NOT NULL | | |
+| `unit_price` | `numeric(10,2)` | NOT NULL | | price at the time of the original sale (returned) or current price (new) |
+| `direction` | `varchar(20)` | NOT NULL | | `returned` \| `new` |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | |
+| `updated_at` | `timestamptz` | NOT NULL | `now()` | |
+
+**Indexes:** `return_items_pkey` PK btree (`id`)
+**Check constraints:** `ck_return_items_quantity_positive` (`quantity > 0`)
+
+---
+
+## stock_requests
+
+Item 11 (Central Warehouse) — the central warehouse is not itself a tracked stock entity, it is
+an unlimited/always-available source; requests are always fulfilled instantly (no approval/
+rejection workflow). This table exists purely for audit/history.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `product_id` | `bigint` | NOT NULL | | FK → `products.id` |
+| `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
+| `quantity` | `integer` | NOT NULL | | |
+| `requested_by` | `bigint` | NOT NULL | | FK → `employees.id` (Stock Manager) |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | no `updated_at` — immutable event record |
+
+**Indexes:** `stock_requests_pkey` PK btree (`id`)
+**Check constraints:** `ck_stock_requests_quantity_positive` (`quantity > 0`)
+**Note:** creating a request atomically increments the matching `stock.quantity` row in the same transaction.
 
 ---
 
@@ -301,15 +373,89 @@ kalırdı (Sprint 6 review bulgusu, 2026-08-13'te düzeltildi).
 
 ---
 
+## layout_zones
+
+UC-15 SHOULD (store floor-plan visualization) — a named area (shelf/aisle zone) that a Seller
+Manager freely creates and positions on their branch's floor plan. A visual/relative
+representation, not a physical measurement.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
+| `name` | `varchar(100)` | NOT NULL | | |
+| `x` | `integer` | NOT NULL | `0` | canvas position |
+| `y` | `integer` | NOT NULL | `0` | canvas position |
+| `width` | `integer` | NOT NULL | | |
+| `height` | `integer` | NOT NULL | | |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | |
+| `updated_at` | `timestamptz` | NOT NULL | `now()` | |
+
+**Indexes:** `layout_zones_pkey` PK btree (`id`)
+**Referenced by:** `stock.zone_id` (`ON DELETE SET NULL`)
+
+---
+
+## stock_zones
+
+A Stock Manager's own free-form zone editor for visualizing the physical layout of their
+storage/back-of-house area — deliberately independent of `layout_zones` (which belongs to the
+Seller Manager's sales-floor/co-occurrence workflow). No product assignment, no recommendation
+overlay — just name + position + size.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
+| `name` | `varchar(100)` | NOT NULL | | |
+| `x` | `integer` | NOT NULL | `0` | canvas position |
+| `y` | `integer` | NOT NULL | `0` | canvas position |
+| `width` | `integer` | NOT NULL | | |
+| `height` | `integer` | NOT NULL | | |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | |
+| `updated_at` | `timestamptz` | NOT NULL | `now()` | |
+
+**Indexes:** `stock_zones_pkey` PK btree (`id`)
+
+---
+
+## layout_recommendation_applications
+
+UC-15 — audit record of a Seller Manager marking a layout suggestion (a product pair) as
+"applied." The physical shelf change happens outside the system; this is only the
+acceptance/application record.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | NOT NULL | `nextval(...)` | PK |
+| `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
+| `product_a_id` | `bigint` | NOT NULL | | FK → `products.id` |
+| `product_b_id` | `bigint` | NOT NULL | | FK → `products.id` |
+| `applied_by` | `bigint` | NOT NULL | | FK → `employees.id` |
+| `applied_at` | `timestamptz` | NOT NULL | | |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | |
+
+**Indexes:** `layout_recommendation_applications_pkey` PK btree (`id`); `uq_layout_application_branch_pair` UNIQUE btree (`branch_id`, `product_a_id`, `product_b_id`) — upsert target, re-applying the same pair updates `applied_at`/`applied_by` instead of erroring
+
+---
+
 ## Entity-Relationship Overview
 
 ```
 companies 1───* regions 1───* branches 1───* stock *───1 products
+   │                                │           │
+   │                                │           └──0..1─* layout_zones (zone_id)
    │                                │
    │                                ├──1───* sales *───1 employees
-   │                                │           │
+   │                                │           │        │
+   │                                │           │        └───* returns (initiated_by / completed_by)
    │                                │           └───* sale_items *───1 products
    │                                │
+   │                                ├──1───* returns *───1 sale_items-like return_items *───1 products
+   │                                ├──1───* stock_requests *───1 employees (requested_by)
+   │                                ├──1───* layout_zones
+   │                                ├──1───* stock_zones
+   │                                ├──1───* layout_recommendation_applications
    │                                └──0..1─* employees (branch_id)
    │
    ├──0..1─* employees (region_id via regions, company_id direct)
@@ -317,6 +463,8 @@ companies 1───* regions 1───* branches 1───* stock *───1
    └──1───1 company_branding
 
 employees 1───* shifts
+employees 1───* notification_reads
+returns 1───* return_items
 ```
 
 For the full conceptual class diagram (PlantUML), see `documents/stocksense-class-diagram.puml`.
