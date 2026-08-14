@@ -103,13 +103,15 @@ Personal Care, Household Supplies, Coffee & Tea, Pet Supplies.
 - 1 `branch_manager`
 - 1-2 `stock_manager` (manager_pin'li)
 - 1-2 `seller_manager` (manager_pin'li)
+- 1 `operations_chief` (manager_pin'li)
 - 2-3 `cashier`
 - 10 login'siz `staff`
 
 Bölge başına 1 `region_manager`. Şirket geneli: 1 `general_manager`, 1 `company_it`.
 
 **Şen Market** — her şubede:
-- 1 `branch_manager`, 1 `stock_manager` (pin'li), 1 `seller_manager` (pin'li), 1 `cashier`
+- 1 `branch_manager`, 1 `stock_manager` (pin'li), 1 `seller_manager` (pin'li), 1 `operations_chief`
+  (pin'li), 1 `cashier`
 - 2 login'siz `staff`
 
 Bölge başına 1 `region_manager` (tek bölge olduğu için toplam 1). Şirket geneli: 1
@@ -121,7 +123,8 @@ gelen mevcut `vendormgr1` her iki yeni şirketi de görebilir/yönetebilir (rol�
 **İsimlendirme (Karar 0):** `first_name` Türkçe isim havuzundan seçilir (özel isim). `last_name`,
 testco'daki unvan-soyadı konvansiyonunun İngilizce karşılığıdır — role göre: `Cashier`,
 `BranchManager`, `RegionManager`, `GeneralManager`, `StockManager`, `SellerManager`,
-`OperationsChief`, `CompanyIT`, `Staff` (login'siz personel). Aynı şube/rolde birden fazla kişi
+`OperationsChief`, `CompanyIT`, `Staff` (login'siz personel). (Not: `OperationsChief` unvanı ilk
+taslakta personel listesinden yanlışlıkla düşmüştü, kullanıcı onayıyla eklendi.) Aynı şube/rolde birden fazla kişi
 varsa `first_name` farklılaşır, `last_name` (unvan) aynı kalır — benzersizlik zaten `username`
 üzerinden sağlanıyor. `address` alanı İngilizce format + Türkçe yer adı kullanır (örn. "123 Bagdat
 Ave, Kadikoy, Istanbul").
