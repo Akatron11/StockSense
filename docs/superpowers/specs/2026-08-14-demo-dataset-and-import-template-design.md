@@ -20,6 +20,24 @@ Excel import özelliğiyle ürün yüklenecek — bunun için önceden hazırlan
 
 ## Kararlar (kullanıcı onaylı, 2026-08-14 — brainstorming diyaloğuyla netleşti)
 
+### 0. Dil kuralı (tüm bölümleri etkiler)
+
+Sunumu dinleyecek hoca Türkçe bilmiyor — bu yüzden **özel isimler dışında** üretilecek hiçbir veri
+Türkçe olmayacak:
+
+- **Türkçe kalanlar (özel isim):** çalışan `first_name` (Cem, Ayşe, Selin...), bölge/şube için
+  kullanılan gerçek Türkiye yer adları (Kadıköy, Beşiktaş, Marmara...), `Şen Market` şirket adı
+  (kurgusal marka ismi olarak kabul edildi, çevrilmeyecek).
+- **İngilizce olacaklar:** şube/bölge etiketleri ("Şube" → "Branch", "Bölge" → "Region", örn.
+  "Kadıköy Branch", "Marmara Region"), çalışan `last_name` (testco'daki unvan-soyadı konvansiyonu,
+  örn. "Cem **Cashier**" — bkz. Karar 4), adres etiketleri (yer adı Türkçe kalır ama format
+  İngilizce, örn. "123 Bagdat Ave, Kadikoy, Istanbul"), tüm ürün isimleri/kategorileri (Mockaroo
+  çıktısı), 100 ürünlük day-0 import şablonu.
+- MegaMarket'in 5 bölgesi gerçek Türkiye coğrafi bölge adlarını kullanır (Marmara, Ege, Akdeniz,
+  İç Anadolu, Karadeniz), her bölgedeki şubeler o bölgeden gerçek şehir isimleriyle adlandırılır
+  (örn. Marmara → "Istanbul Branch", "Bursa Branch"). Şen Market'in tek bölgesi ve 5-6 şubesi için
+  de aynı mantık (bir bölge adı + o bölgeden şehir isimleriyle şubeler).
+
 ### 1. Kapsam ve izolasyon
 
 - `testco` verisine hiç dokunulmaz — tamamen ayrı, yeni script(lar) eklenir.
@@ -55,21 +73,21 @@ personel eksiltilseydi o şubede belirli özellikler hiç kullanılamaz hale gel
 ### 3. Ürün kataloğu — Mockaroo pipeline
 
 **Kategori listesi (16 kategori, kullanıcı onaylı, ihtiyaç halinde implementasyon sırasında
-ayarlanabilir):** Süt Ürünleri, Fırın, Temizlik, Atıştırmalık, İçecek, Şarküteri, Kahvaltılık, Et
-Ürünleri, Meyve-Sebze, Donmuş Gıda, Bakliyat/Konserve, Bebek Ürünleri, Kişisel Bakım, Ev/Temizlik
-Gereçleri, Kahve-Çay, Evcil Hayvan.
+ayarlanabilir — Karar 0 gereği İngilizce):** Dairy, Bakery, Cleaning Supplies, Snacks, Beverages,
+Deli, Breakfast & Pantry, Meat, Produce, Frozen Food, Canned Goods & Legumes, Baby Products,
+Personal Care, Household Supplies, Coffee & Tea, Pet Supplies.
 
 **Akış:**
 1. Kullanıcı Mockaroo'da bir şema kurar ve **800 satırlık tek bir CSV** üretir. Alanlar:
-   - `product_name` — marka + ürün tipi + boy/gramaj (örn. "Ülker Çikolata 70g")
+   - `product_name` — marka + ürün tipi + boy/gramaj, İngilizce (örn. "Nestle Chocolate Bar 70g")
    - `category` — yukarıdaki 16 kategoriden Custom List
    - `default_price` — kategoriye göre makul aralıkta (örn. 5-500 TL)
    - (opsiyonel) `best_before_date` — kullanıcı isterse Mockaroo'da üretir, istemezse script
      tarafında kategoriye göre üretilir (bkz. Karar 5)
 2. Kullanıcı CSV'yi teslim eder.
 3. `backend/generate_demo_dataset.py` bu CSV'yi okur:
-   - **SKU** kategori + sıra numarasından programatik üretilir (örn. `SKU-SUTURUNLERI-014`),
-     mevcut `SKU-XXXX-nn` konvansiyonuna uyar, Mockaroo'dan istenmez.
+   - **SKU** kategori + sıra numarasından programatik üretilir (örn. `SKU-DAIRY-014`), mevcut
+     `SKU-XXXX-nn` konvansiyonuna uyar, Mockaroo'dan istenmez.
    - **`cost_price`**, kategoriye göre farklı kâr marjı oranıyla `default_price`'tan hesaplanır
      (Mockaroo'dan istenmez) — bkz. Karar 6.
    - MegaMarket'in 800 ürününün tamamı kullanılır; Şen Market için bu 800'ün kategori-dengeli
@@ -100,6 +118,14 @@ Bölge başına 1 `region_manager` (tek bölge olduğu için toplam 1). Şirket 
 **`vendor_manager`:** Yeni hesap açılmaz — `company_id IS NULL` olduğu için tenant-üstü, testco'dan
 gelen mevcut `vendormgr1` her iki yeni şirketi de görebilir/yönetebilir (rolün tasarımı zaten bu).
 
+**İsimlendirme (Karar 0):** `first_name` Türkçe isim havuzundan seçilir (özel isim). `last_name`,
+testco'daki unvan-soyadı konvansiyonunun İngilizce karşılığıdır — role göre: `Cashier`,
+`BranchManager`, `RegionManager`, `GeneralManager`, `StockManager`, `SellerManager`,
+`OperationsChief`, `CompanyIT`, `Staff` (login'siz personel). Aynı şube/rolde birden fazla kişi
+varsa `first_name` farklılaşır, `last_name` (unvan) aynı kalır — benzersizlik zaten `username`
+üzerinden sağlanıyor. `address` alanı İngilizce format + Türkçe yer adı kullanır (örn. "123 Bagdat
+Ave, Kadikoy, Istanbul").
+
 ### 5. Satış / iade / stok talebi üretim mantığı
 
 - **Zaman aralığı:** son 90 gün.
@@ -113,12 +139,12 @@ gelen mevcut `vendormgr1` her iki yeni şirketi de görebilir/yönetebilir (rol�
   Layout önerisi (Apriori) özelliğini anlamlı çalıştırmak için.
 - **Ödeme yöntemi:** ~%40 cash / %60 card.
 - **Kâr marjı (kategoriye göre farklı `cost_price` oranı):** Örn. çabuk bozulan/taze ürünler
-  (Meyve-Sebze, Fırın) düşük marj (~%25-35), uzun ömürlü/markalı ürünler (Kişisel Bakım, Temizlik)
-  daha yüksek marj (~%35-45) — kesin oranlar implementasyon sırasında script içinde sabitlenir, kâr
-  marjı raporunun kategoriler arasında anlamlı farklılık göstermesi yeterli.
+  (Produce, Bakery) düşük marj (~%25-35), uzun ömürlü/markalı ürünler (Personal Care, Cleaning
+  Supplies) daha yüksek marj (~%35-45) — kesin oranlar implementasyon sırasında script içinde
+  sabitlenir, kâr marjı raporunun kategoriler arasında anlamlı farklılık göstermesi yeterli.
 - **`best_before_date`:** Her ürüne tarih verilir (boş bırakılmaz).
-  - Çabuk bozulan kategoriler (Süt Ürünleri, Fırın, Şarküteri, Donmuş Gıda): 1-60 gün arası —
-    bazıları bilerek çok yakın/geçmiş tarihte bırakılır (SKT bildirim senaryosunu tetiklemek için).
+  - Çabuk bozulan kategoriler (Dairy, Bakery, Deli, Frozen Food): 1-60 gün arası — bazıları
+    bilerek çok yakın/geçmiş tarihte bırakılır (SKT bildirim senaryosunu tetiklemek için).
   - Uzun ömürlü kategoriler (diğer 12 kategori): 365-730 gün arası.
 - **Düşük stok deseni:** Bazı ürün-şube kombinasyonlarında `stock.quantity`, `low_stock_threshold`
   altında bilerek bırakılır (testco'daki süt örneği gibi) — düşük stok bildirimini tetikler.
@@ -151,10 +177,12 @@ gelen mevcut `vendormgr1` her iki yeni şirketi de görebilir/yönetebilir (rol�
   şablonunu üretir.
 - Her iki script de `seed_test_data.py` deseninde **idempotent**: subdomain'e göre var olan şirket
   bulunursa önce silinir, sonra yeniden üretilir — sunumdan önce güvenle tekrar çalıştırılabilir.
-- **CSV girdi dosyası konumu:** `backend/seed_data/megamarket_products.csv`. Bu dosya
-  **`.gitignore`'a eklenir** — tek seferlik/gösterimlik veri olduğu, sunum sonrası tekrar
-  kullanılmayacağı için repo'ya yük olarak girmez. Script'lerin kendisi (`.py`) commit edilir;
-  ihtiyaç olursa yeni bir Mockaroo export'uyla tekrar çalıştırılabilir.
+- **CSV girdi dosyası konumu:** `backend/seed_data/megamarket_products.csv`. **Bu dosya da commit
+  edilir** (script'lerle birlikte) — hoca repo'yu klonlayıp script'i çalıştırdığında aynı demo
+  veriyi kendi ortamında yeniden üretebilsin diye reprodukibilite önceliklidir; birkaç yüz satırlık
+  bir CSV repo'ya ciddi bir yük getirmez. (İlk taslakta "tek seferlik, gitignore'da kalsın"
+  denilmişti — hocanın repo'yu bağımsız çalıştırabilmesi gerektiği fark edilince bu karar
+  değiştirildi.)
 
 ## Kapsam dışı (bilinçli, bu tur için)
 
