@@ -25,10 +25,15 @@ def select_balanced_subset(raw_products: list, target: int = TARGET_COUNT) -> li
     for raw in raw_products:
         by_category.setdefault(raw.category, []).append(raw)
 
-    per_category = max(1, target // len(CATEGORY_INFO))
+    num_categories = len(CATEGORY_INFO)
+    per_category = target // num_categories
+    extra = target % num_categories
+
     selected: list = []
-    for items in by_category.values():
-        selected.extend(random.sample(items, k=min(per_category, len(items))))
+    for index, category in enumerate(CATEGORY_INFO):
+        items = by_category.get(category, [])
+        desired = per_category + 1 if index < extra else per_category
+        selected.extend(random.sample(items, k=min(desired, len(items))))
 
     random.shuffle(selected)
     return selected[:target]
