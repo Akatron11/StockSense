@@ -14,9 +14,9 @@ from datetime import date
 
 from openpyxl import Workbook
 
+from app.services.product_import import EXPECTED_HEADERS
 from demo_data.catalog import CATEGORY_INFO, generate_best_before_date, generate_cost_price, generate_sku, load_products_csv
 
-EXPECTED_HEADERS = ["name", "sku", "category", "default_price", "cost_price", "best_before_date"]
 TARGET_COUNT = 100
 
 
@@ -63,7 +63,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--csv", default="seed_data/megamarket_products.csv")
     parser.add_argument("--out", default="seed_data/day0_import_template.xlsx")
+    parser.add_argument("--seed", type=int, default=20260814)
     args = parser.parse_args()
+
+    random.seed(args.seed)
 
     raw_products = load_products_csv(args.csv)
     subset = select_balanced_subset(raw_products)

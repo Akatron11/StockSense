@@ -54,7 +54,7 @@ class RawProduct:
 
 def load_products_csv(path: str) -> list[RawProduct]:
     products: list[RawProduct] = []
-    with open(path, newline="", encoding="utf-8") as f:
+    with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row_num, row in enumerate(reader, start=2):
             category = (row.get("category") or "").strip()

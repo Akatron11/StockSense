@@ -14,8 +14,9 @@ from datetime import date
 
 from app.database import SessionLocal
 from app.models import (
-    Branch, Company, CompanyFeature, Employee, Product, Region,
-    Return, ReturnItem, Sale, SaleItem, Shift, Stock, StockRequest,
+    Branch, Company, CompanyFeature, Employee, LayoutRecommendationApplication, LayoutZone,
+    NotificationRead, Product, Region, Return, ReturnItem, Sale, SaleItem, Shift, Stock,
+    StockRequest, StockZone,
 )
 from demo_data.catalog import generate_best_before_date, generate_cost_price, generate_sku, load_products_csv
 from demo_data.org import MEGAMARKET_SPEC, SENMARKET_SPEC, CompanySpec, build_company_org
@@ -49,7 +50,16 @@ def _delete_company_if_exists(db, subdomain: str) -> None:
     db.query(Shift).filter(
         Shift.employee_id.in_(db.query(Employee.id).filter(Employee.company_id == existing.id))
     ).delete(synchronize_session=False)
+    # NotificationRead.employee_id and LayoutRecommendationApplication.applied_by both FK to
+    # employees.id (RESTRICT) — these must be deleted BEFORE the Employee delete below, not after
+    # (deleting them after Employee raised ForeignKeyViolation on employees.id during verification).
+    db.query(NotificationRead).filter(NotificationRead.branch_id.in_(branch_ids)).delete(synchronize_session=False)
+    db.query(LayoutRecommendationApplication).filter(
+        LayoutRecommendationApplication.branch_id.in_(branch_ids)
+    ).delete(synchronize_session=False)
     db.query(Employee).filter(Employee.company_id == existing.id).delete()
+    db.query(StockZone).filter(StockZone.branch_id.in_(branch_ids)).delete(synchronize_session=False)
+    db.query(LayoutZone).filter(LayoutZone.branch_id.in_(branch_ids)).delete(synchronize_session=False)
     db.query(Stock).filter(Stock.branch_id.in_(branch_ids)).delete(synchronize_session=False)
     db.query(Product).filter(Product.company_id == existing.id).delete()
     db.query(Branch).filter(
@@ -138,15 +148,21 @@ def _generate_company(db, spec: CompanySpec, raw_products: list, is_megamarket: 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--csv", default="seed_data/megamarket_products.csv")
+    parser.add_argument("--seed", type=int, default=20260814)
     args = parser.parse_args()
+
+    random.seed(args.seed)
 
     raw_products = load_products_csv(args.csv)
     print(f"Loaded {len(raw_products)} products from {args.csv}")
 
-    db = SessionLocal()
+    db = SessionLocal(expire_on_commit=False)
     try:
         _generate_company(db, MEGAMARKET_SPEC, raw_products, is_megamarket=True)
         _generate_company(db, SENMARKET_SPEC, raw_products, is_megamarket=False)
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 

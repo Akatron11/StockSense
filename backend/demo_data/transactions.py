@@ -54,10 +54,18 @@ def generate_sales_for_branch(
     sales: list = []
     now = datetime.now(timezone.utc)
 
+    # Pattern pairs are built once per company over the full catalog, but a branch may not stock
+    # both products in a given pair — filter to branch-available pairs once here (not per basket,
+    # which would recompute this set filter for every sale in the day/sale loops below).
+    available_set = set(available_products)
+    branch_pattern_pairs = [
+        (a, b) for a, b in pattern_pairs if a in available_set and b in available_set
+    ]
+
     for day_offset in range(days_span):
         daily_count = random.randint(*daily_count_range)
         for _ in range(daily_count):
-            basket = _build_basket(pattern_pairs, available_products)
+            basket = _build_basket(branch_pattern_pairs, available_products)
             employee = random.choice(cashiers)
             sale_date = (now - timedelta(days=day_offset)).replace(
                 hour=random.randint(8, 21), minute=random.randint(0, 59), second=0, microsecond=0,
