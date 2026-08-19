@@ -1,32 +1,26 @@
-# React + TypeScript + Vite
+# StockSense — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Vite web app covering every role except the mobile-only manager views
+(see [`../mobile`](../mobile)). For project-wide setup (database, backend, seed data, demo
+credentials, subdomain routing) see the [root README](../README.md).
 
-Currently, two official plugins are available:
+## Commands
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev       # dev server, http://localhost:5173
+npm run build     # tsc -b && vite build
+npm run lint       # oxlint
+npm run preview   # preview a production build locally
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Notes
+
+- **Subdomain-scoped API calls:** the API base URL is derived from `window.location.hostname`
+  (`api/client.ts`) — the app must be opened via `<subdomain>.localhost:5173`, not plain
+  `localhost:5173` (see root README, "Multi-tenant access").
+- **i18n:** TR/EN strings live in `src/i18n/locales/{tr,en}.json`, loaded via `react-i18next`.
+  Product/category names and other business data are intentionally not translated.
+- **Source layout:** `pages/` (one per route/dashboard), `components/` (shared UI incl.
+  `navConfig.ts` for the role-based sidebar), `api/` (one file per backend router), `types/`,
+  `auth/` (JWT context, role labels), `theme/` (per-tenant brand color injection), `styles/`.

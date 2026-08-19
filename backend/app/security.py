@@ -2,7 +2,10 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+from dotenv import load_dotenv
 from jose import jwt
+
+load_dotenv()
 
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
