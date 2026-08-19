@@ -348,10 +348,10 @@ Item 10 — 1-1 visual identity per tenant.
 
 ## notification_reads
 
-Sprint 6 (mobil companion app) — bildirim okundu/okunmadı takibi. `GET /api/notifications`
-kalıcı bir kayıt değil, anlık bir sorgu sonucu (düşük stok / SKT eşiği aşımı) olduğu için
-"hangi bildirim okundu" bilgisi bildirimin kendi ID'siyle değil, onu üreten satırın doğal
-anahtarıyla (`kind` + `product_id` + `branch_id`) tutuluyor.
+Sprint 6 (mobile companion app) — notification read/unread tracking. Since `GET /api/notifications`
+is not a persistent record but a live query result (low-stock / expiry-threshold breach), "which
+notification was read" is tracked not by the notification's own ID, but by the natural key of the
+row that produced it (`kind` + `product_id` + `branch_id`).
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
@@ -361,15 +361,16 @@ anahtarıyla (`kind` + `product_id` + `branch_id`) tutuluyor.
 | `product_id` | `bigint` | NOT NULL | | FK → `products.id` |
 | `branch_id` | `bigint` | NOT NULL | | FK → `branches.id` |
 | `read_at` | `timestamptz` | NOT NULL | `now()` | |
-| `created_at` | `timestamptz` | NOT NULL | `now()` | no `updated_at` — bir satır sadece oluşturulur/silinir, güncellenmez |
+| `created_at` | `timestamptz` | NOT NULL | `now()` | no `updated_at` — a row is only ever created/deleted, never updated |
 
 **Indexes:** `notification_reads_pkey` PK btree (`id`); `uq_notification_read_employee_item`
 UNIQUE btree (`employee_id`, `kind`, `product_id`, `branch_id`)
 
-**Not:** düşük stok/SKT durumu koşulu artık geçersiz hale geldiğinde (stok eşiğin üzerine
-çıkınca, SKT penceresi dışına çıkınca) ilgili satır silinir (`services/notification_reads.py`)
-— aksi halde durum tekrar tetiklenince bildirim eski okundu-işaretiyle sessizce görünmez
-kalırdı (Sprint 6 review bulgusu, 2026-08-13'te düzeltildi).
+**Note:** once the underlying low-stock/expiry condition becomes invalid again (stock rises back
+above the threshold, or the item exits the expiry window), the corresponding row is deleted
+(`services/notification_reads.py`) — otherwise, if the condition were triggered again, the
+notification would silently stay hidden behind its stale "read" mark (Sprint 6 review finding,
+fixed 2026-08-13).
 
 ---
 

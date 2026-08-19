@@ -2,9 +2,9 @@
 
 This file is updated as the project's architecture, scalable to general businesses, is discussed and decided step by step.
 
-> Related historical documents (for reference only):
-> - `stocksense-todo-small-scale-draft.md` — the initial scope draft, written under the small-scale assumption.
-> - `stocksense-mimari-kararlar.md` — earlier architectural decisions made under the small-scale assumption (kept for reference/lessons-learned; superseded by this file).
+> The two small-scale-assumption draft documents this file originally superseded
+> (`stocksense-todo-small-scale-draft.md`, `stocksense-mimari-kararlar.md`) have since been
+> permanently deleted (user decision) — this file is now the sole architectural reference.
 
 ---
 
@@ -279,8 +279,7 @@ By the end of the project, the system will be designed not for a single customer
 
 - **Isolation model:** Instead of separate deployments/databases, a **shared schema** will be used — all customers are in the same database, and the existing `branches → regions → companies` hierarchy already serves as the natural tenant boundary via the `companies` table.
 - **Query isolation:** The user's `company_id` (and `branch_id`/`region_id` if applicable) is embedded in the JWT token; all queries pass through a common middleware/dependency layer and are automatically filtered by this scope — writing a separate `company_id` filter in every endpoint individually is not relied upon; it is guaranteed at the infrastructure level.
-- **Feature flag system:** A new `company_features` table — tracks which modules (layout recommendation, mobile app, central-warehouse scenario, KPI module, etc.) are active for which customer. The vendor marks this from a panel during new-customer onboarding. **Schema finalized (during the SRS Class Diagram):** one row per feature (`company_id, feature_name, enabled`) — adding a new feature does not require a schema change, only new rows are added.
-  > **TODO:** How the mobile companion app will be represented via `company_features` (a single "mobile access" feature, or separate features per mobile screen/report) — will be revisited once mobile scope is finalized (see the mobile TODO note at the top of the SRS `stocksense-srs-tr.md`).
+- **Feature flag system:** A new `company_features` table — tracks which modules (layout recommendation, mobile app, central-warehouse scenario, KPI module, etc.) are active for which customer. The vendor marks this from a panel during new-customer onboarding. **Schema finalized (during the SRS Class Diagram):** one row per feature (`company_id, feature_name, enabled`) — adding a new feature does not require a schema change, only new rows are added. How the mobile companion app is represented was an open TODO here until feature-flag enforcement landed (2026-08-14) — settled as a single all-or-nothing `mobil_app` flag rather than separate per-screen flags; see "Feature-flag enforcement" below.
 - **Role set:** Stays fixed — defining a new role type at runtime is not a feature (it can be developed manually later based on feedback). Per-customer "on/off" is **not** a separate config/toggle like `company_features` (settled 2026-08-14, UC-22 review): a role counts as active for a customer purely by inference — if at least one active employee holds that role, the role is active. The Vendor Manager controls this indirectly, by deciding which roles to create employees for during Day-0 setup / employee management; there is no dedicated "role on/off" screen. Fixed set: Cashier, Stock Manager, Seller Manager, Branch Manager, Region Manager, General Manager, Operations Chief, Company IT, Vendor Manager — plus five **deputy** roles: Deputy Seller Manager, Deputy Stock Manager, Deputy Branch Manager, Deputy Region Manager, Deputy General Manager. Deputy roles have **exactly the same authority** as their principal (e.g., Deputy Stock Manager ↔ Stock Manager) — there is no separate "acting/delegated status" tracking in the system, both can perform the same actions at any time. Goal: uninterrupted coverage when the principal is on leave/sick.
 - **Visual identity:** A new `company_branding` table (logo url, primary color, business name) — a customer-specific theme.
 
@@ -436,6 +435,13 @@ decided:
 - **Deputy/helper roles** (Deputy Branch Manager, Deputy Stock Manager, etc., mentioned in item
   10) were never actually added to the role set or the `role` value table in item 9 — they remain
   a named-but-unimplemented idea.
-- **UC-19 (Company IT account override / password reset)** — designed at the architecture level
-  (item 6, "Company IT always has override authority") but the corresponding endpoint has never
-  been implemented; deliberately out of scope until the Day-0 sequence above reaches it.
+- **No audit trail for Company IT password resets.** UC-19 (item 6, "Company IT always has
+  override authority") is implemented — see "Company IT account override" above — but who reset
+  whose password and when is not recorded anywhere (no `reset_by`/`reset_at` columns, no separate
+  log table). Given this is a sensitive power (any Company IT can reset any employee's password,
+  including the General Manager's), it may warrant a migration later; deliberately left out of the
+  initial implementation.
+- **Login does not check `is_active`.** `POST /api/auth/login` never verifies the employee is
+  still active — a deactivated employee (see the reactivation feature above) can still log in and
+  use the system normally. Found incidentally while implementing reactivation; not specific to any
+  single use case, and not yet fixed.

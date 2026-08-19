@@ -4,7 +4,7 @@ This file is added to as the backend API's (FastAPI) design is discussed and dec
 General conventions were decided first, then each module (matching the Component Table in
 `stocksense-architecture.md` and the Use Cases in `stocksense-srs.md`) is detailed separately.
 
-> **Verified against source (2026-08-13):** the "Modules" section below was regenerated directly from
+> **Verified against source (2026-08-14):** the "Modules" section below was regenerated directly from
 > `backend/app/routers/*.py` and `backend/app/schemas/*.py` — every field name, status code, and JSON
 > example reflects the actual running code, not the original design-time plan. A few endpoints from the
 > original design were never built this way (separate `GET /api/reports/top-products` and

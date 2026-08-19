@@ -46,6 +46,7 @@ class Stock {
   quantity
   low_stock_threshold
   price_override : nullable
+  zone_id : FK, nullable
   created_at
   updated_at
 }
@@ -86,6 +87,38 @@ class SaleItem {
   created_at
 }
 
+class Return {
+  id : PK
+  sale_id : FK
+  initiated_by : FK
+  status
+  net_amount
+  completed_by : FK, nullable
+  completed_at : nullable
+  created_at
+  updated_at
+}
+
+class ReturnItem {
+  id : PK
+  return_id : FK
+  product_id : FK
+  quantity
+  unit_price
+  direction
+  created_at
+  updated_at
+}
+
+class StockRequest {
+  id : PK
+  product_id : FK
+  branch_id : FK
+  quantity
+  requested_by : FK
+  created_at
+}
+
 class Shift {
   id : PK
   employee_id : FK
@@ -113,6 +146,50 @@ class CompanyBranding {
   updated_at
 }
 
+class NotificationRead {
+  id : PK
+  employee_id : FK
+  kind
+  product_id : FK
+  branch_id : FK
+  read_at
+  created_at
+}
+
+class LayoutZone {
+  id : PK
+  branch_id : FK
+  name
+  x
+  y
+  width
+  height
+  created_at
+  updated_at
+}
+
+class StockZone {
+  id : PK
+  branch_id : FK
+  name
+  x
+  y
+  width
+  height
+  created_at
+  updated_at
+}
+
+class LayoutRecommendationApplication {
+  id : PK
+  branch_id : FK
+  product_a_id : FK
+  product_b_id : FK
+  applied_by : FK
+  applied_at
+  created_at
+}
+
 Company "1" -- "*" Region
 Region "1" -- "*" Branch
 Branch "1" -- "*" Stock
@@ -124,8 +201,23 @@ Employee "1" -- "*" Sale
 Branch "1" -- "*" Sale
 Sale "1" -- "*" SaleItem
 Product "1" -- "*" SaleItem
+Sale "1" -- "*" Return
+Employee "1" -- "*" Return
+Return "1" -- "*" ReturnItem
+Product "1" -- "*" ReturnItem
+Branch "1" -- "*" StockRequest
+Product "1" -- "*" StockRequest
+Employee "1" -- "*" StockRequest
 Employee "1" -- "*" Shift
 Company "1" -- "*" CompanyFeature
 Company "1" -- "1" CompanyBranding
+Employee "1" -- "*" NotificationRead
+Product "1" -- "*" NotificationRead
+Branch "1" -- "*" NotificationRead
+Branch "1" -- "*" LayoutZone
+LayoutZone "0..1" -- "*" Stock
+Branch "1" -- "*" StockZone
+Branch "1" -- "*" LayoutRecommendationApplication
+Product "1" -- "*" LayoutRecommendationApplication
 
 @enduml

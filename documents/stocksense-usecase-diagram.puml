@@ -2,68 +2,68 @@
 left to right direction
 skinparam packageStyle rectangle
 
-actor "Kasiyer" as Kasiyer
+actor "Cashier" as Cashier
 actor "Stock Manager" as SM
 actor "Seller Manager" as SelM
-actor "Operasyon Şefi" as OS
-actor "Şube Müdürü" as SubeM
-actor "Bölge Müdürü" as BolgeM
-actor "Genel Müdür" as GM
-actor "Satıcı Yöneticisi" as SatM
-actor "Şirket IT" as IT
+actor "Operations Chief" as OS
+actor "Branch Manager" as BranchM
+actor "Region Manager" as RegionM
+actor "General Manager" as GM
+actor "Vendor Manager" as VendM
+actor "Company IT" as IT
 
 rectangle "StockSense" {
 
-  package "POS / Satış İşlemleri" {
-    usecase "UC-01: Barkod/SKU ile Ürün Arama" as UC01
-    usecase "UC-02: Satış Tamamlama" as UC02
-    usecase "UC-03: İade/Değişim Başlatma" as UC03
-    usecase "UC-04: İade/Değişim Onayı (PIN)" as UC04
-    usecase "UC-05: Kasaya Geçiş" as UC05
+  package "POS / Sales Operations" {
+    usecase "UC-01: Product Lookup by Barcode/SKU" as UC01
+    usecase "UC-02: Complete Sale" as UC02
+    usecase "UC-03: Initiate Return/Exchange" as UC03
+    usecase "UC-04: Approve Return/Exchange (PIN)" as UC04
+    usecase "UC-05: Switch to Register" as UC05
   }
 
-  package "Stok Yönetimi" {
-    usecase "UC-06: Ürün Kataloğu Yönetimi" as UC06
-    usecase "UC-07: Şube Bazlı Fiyat Belirleme" as UC07
-    usecase "UC-08: Şube Stoğu Ekleme/Düzenleme" as UC08
-    usecase "UC-09: Merkez Depodan Stok Talep Etme" as UC09
-    usecase "UC-10: Düşük Stok Eşiği Ayarlama" as UC10
-    usecase "UC-11: Düşük Stok Bildirimi Alma" as UC11
-    usecase "UC-12: SKT Bildirimi Alma ve İndirim Kararı" as UC12
+  package "Stock Management" {
+    usecase "UC-06: Manage Product Catalog" as UC06
+    usecase "UC-07: Set Branch-Based Pricing" as UC07
+    usecase "UC-08: Add/Edit Branch Stock" as UC08
+    usecase "UC-09: Request Stock from Central Warehouse" as UC09
+    usecase "UC-10: Set Low Stock Threshold" as UC10
+    usecase "UC-11: Receive Low Stock Notification" as UC11
+    usecase "UC-12: Receive Expiry Notification and Make Discount Decision" as UC12
   }
 
-  package "Raporlama / Layout Önerisi" {
-    usecase "UC-13: Satış Raporu Görüntüleme" as UC13
-    usecase "UC-14: En Çok/Az Satan ve Hiç Satılmayan Raporu" as UC14
-    usecase "UC-15: Layout Önerisi Görüntüleme" as UC15
-    usecase "UC-16: Net Kâr Marjı (KPI) Raporu Görüntüleme" as UC16
+  package "Reporting / Layout Recommendation" {
+    usecase "UC-13: View Sales Report" as UC13
+    usecase "UC-14: View Best/Worst-Selling and Never-Sold Report" as UC14
+    usecase "UC-15: View Layout Recommendation" as UC15
+    usecase "UC-16: View Net Profit Margin (KPI) Report" as UC16
   }
 
-  package "Hesap / Personel Yönetimi" {
-    usecase "UC-17: İlk Kurulum (Day-0)" as UC17
-    usecase "UC-18: Alt Seviye Hesap Oluşturma" as UC18
-    usecase "UC-19: Hesap Kurtarma / Şirket IT Override" as UC19
-    usecase "UC-20: Login'siz Personel Kaydı Oluşturma" as UC20
-    usecase "UC-21: Vardiya Atama" as UC21
+  package "Account / Staff Management" {
+    usecase "UC-17: Initial Setup (Day-0)" as UC17
+    usecase "UC-18: Create Lower-Level Account" as UC18
+    usecase "UC-19: Account Recovery / Company IT Override" as UC19
+    usecase "UC-20: Create Login-Less Staff Record" as UC20
+    usecase "UC-21: Assign Shift" as UC21
   }
 
-  package "Multi-Tenant / Satıcı İşlemleri" {
-    usecase "UC-22: Müşteri Özellik/Rol Konfigürasyonu" as UC22
-    usecase "UC-23: Görsel Kimlik (Branding) Ayarlama" as UC23
+  package "Multi-Tenant / Vendor Operations" {
+    usecase "UC-22: Configure Customer Features/Roles" as UC22
+    usecase "UC-23: Configure Visual Identity (Branding)" as UC23
   }
 }
 
-' --- POS / Satış İşlemleri ---
-Kasiyer --> UC01
-Kasiyer --> UC02
-Kasiyer --> UC03
+' --- POS / Sales Operations ---
+Cashier --> UC01
+Cashier --> UC02
+Cashier --> UC03
 SM --> UC04
 SelM --> UC04
 OS --> UC04
 OS --> UC05
 UC04 ..> UC03 : <<extend>>
 
-' --- Stok Yönetimi ---
+' --- Stock Management ---
 GM --> UC06
 SelM --> UC07
 SM --> UC08
@@ -75,32 +75,32 @@ SelM --> UC12
 OS --> UC12
 UC09 ..> UC08 : <<extend>>
 
-' --- Raporlama / Layout Önerisi ---
-SubeM --> UC13
-BolgeM --> UC13
+' --- Reporting / Layout Recommendation ---
+BranchM --> UC13
+RegionM --> UC13
 GM --> UC13
 SelM --> UC13
-SubeM --> UC14
-BolgeM --> UC14
+BranchM --> UC14
+RegionM --> UC14
 GM --> UC14
 SelM --> UC14
 SelM --> UC15
-SubeM --> UC16
-BolgeM --> UC16
+BranchM --> UC16
+RegionM --> UC16
 GM --> UC16
 
-' --- Hesap / Personel Yönetimi ---
-SatM --> UC17
-SubeM --> UC18
-BolgeM --> UC18
+' --- Account / Staff Management ---
+VendM --> UC17
+BranchM --> UC18
+RegionM --> UC18
 GM --> UC18
 IT --> UC18
 IT --> UC19
 OS --> UC20
 OS --> UC21
 
-' --- Multi-Tenant / Satıcı İşlemleri ---
-SatM --> UC22
-SatM --> UC23
+' --- Multi-Tenant / Vendor Operations ---
+VendM --> UC22
+VendM --> UC23
 
 @enduml

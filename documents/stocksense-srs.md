@@ -1,8 +1,8 @@
 # StockSense — Software Requirements Specification (SRS)
 
-This file holds the SRS content prepared based on the architectural decisions finalized in `stocksense-architecture-tr.md`. It is filled in section by section, as each part is discussed and approved.
+This file holds the SRS content prepared based on the architectural decisions finalized in `stocksense-architecture.md`. It is filled in section by section, as each part is discussed and approved.
 
-> Reference: `stocksense-architecture-tr.md` (current architectural decisions), `topic.pdf` (project brief).
+> Reference: `stocksense-architecture.md` (current architectural decisions), `topic.pdf` (project brief).
 
 > **Resolved (2026-08-11):** the mobile companion app scope question above was settled — mobile does **not**
 > get separate UCs; it is read-only mobile access to the same four use cases (UC-11/12 notifications,
@@ -18,7 +18,7 @@ This file holds the SRS content prepared based on the architectural decisions fi
 
 ## Introduction
 
-This document defines the functional and non-functional requirements of the StockSense project ("Stock Control POS & Store Remodeling Recommender"). The project, framed in the `topic.pdf` brief for a small-scale single store, was expanded by the instructor's verbal directive into **a product scalable to general businesses** (see `stocksense-architecture-tr.md` — "Scope Change"). Building on all the decisions finalized in the architecture file (role hierarchy, data model, multi-tenant structure, etc.), this SRS specifies what the system must do in the form of use cases, functional/non-functional requirements, and diagrams (Use Case, Class).
+This document defines the functional and non-functional requirements of the StockSense project ("Stock Control POS & Store Remodeling Recommender"). The project, framed in the `topic.pdf` brief for a small-scale single store, was expanded by the instructor's verbal directive into **a product scalable to general businesses** (see `stocksense-architecture.md` — "Scope Change"). Building on all the decisions finalized in the architecture file (role hierarchy, data model, multi-tenant structure, etc.), this SRS specifies what the system must do in the form of use cases, functional/non-functional requirements, and diagrams (Use Case, Class).
 
 ## Audience
 
@@ -371,7 +371,9 @@ Each FR is the requirement-statement translation of its related UC (no MoSCoW pr
 
 A direct reflection of the database schema in the architecture file (item 9 — base schema, item 10 — multi-tenant tables, item 9 "Schema Refinement" — pre-implementation decisions) — no separate conceptual/domain abstraction was made (`Employee` is a single class, `role` is an attribute; no inheritance is used). Among the `role` values, **Vendor Manager** and **Company IT** now replace the old (single) Admin; since the Vendor Manager is above the tenant level, all three of `branch_id`/`region_id`/`company_id` are null. `CompanyFeature`'s field structure was not defined in item 10 — here it is modeled as one row per feature (`company_id, feature_name, enabled`), so that new features can be added without a schema change.
 
-**Reflection of the Schema Refinement decisions:** `id` fields are BIGSERIAL (shown simply as `PK` in the diagram). `is_active` was added to the classes within soft-delete scope (`Company`, `Region`, `Branch`, `Employee`, `Product`). `created_at` was added to all classes; `updated_at` was additionally added to the updatable ones (the five with `is_active`, plus `Stock`, `CompanyFeature`, `CompanyBranding`) — immutable event records (`Sale`, `SaleItem`, `Shift`) only get `created_at`.
+**Reflection of the Schema Refinement decisions:** `id` fields are BIGSERIAL (shown simply as `PK` in the diagram). `is_active` was added to the classes within soft-delete scope (`Company`, `Region`, `Branch`, `Employee`, `Product`). `created_at` was added to all classes; `updated_at` was additionally added to the updatable ones (the five with `is_active`, plus `Stock`, `CompanyFeature`, `CompanyBranding`, and the post-initial-SRS additions below that are updatable) — immutable event records (`Sale`, `SaleItem`, `Shift`, `StockRequest`, `LayoutRecommendationApplication`, `NotificationRead`) only get `created_at`.
+
+**Post-initial-SRS additions (see Features List — "Later additions" — and `stocksense-architecture.md` item 18 for the *why*):** `Return`/`ReturnItem` (return/exchange, item 6), `StockRequest` (central warehouse, item 11), `NotificationRead` (mobile read/unread tracking), `LayoutZone`/`StockZone`/`LayoutRecommendationApplication` (floor-plan visualization and layout simulation, UC-15 SHOULD/COULD). `Stock` gained a nullable `zone_id` FK into `LayoutZone`. The authoritative, code-verified version of every table lives in `DATABASE_SCHEMA.md` at the repository root; the diagram below is the conceptual view.
 
 ```plantuml
 @startuml StockSense_ClassDiagram
@@ -422,6 +424,7 @@ class Stock {
   quantity
   low_stock_threshold
   price_override : nullable
+  zone_id : FK, nullable
   created_at
   updated_at
 }
@@ -462,6 +465,38 @@ class SaleItem {
   created_at
 }
 
+class Return {
+  id : PK
+  sale_id : FK
+  initiated_by : FK
+  status
+  net_amount
+  completed_by : FK, nullable
+  completed_at : nullable
+  created_at
+  updated_at
+}
+
+class ReturnItem {
+  id : PK
+  return_id : FK
+  product_id : FK
+  quantity
+  unit_price
+  direction
+  created_at
+  updated_at
+}
+
+class StockRequest {
+  id : PK
+  product_id : FK
+  branch_id : FK
+  quantity
+  requested_by : FK
+  created_at
+}
+
 class Shift {
   id : PK
   employee_id : FK
@@ -489,6 +524,50 @@ class CompanyBranding {
   updated_at
 }
 
+class NotificationRead {
+  id : PK
+  employee_id : FK
+  kind
+  product_id : FK
+  branch_id : FK
+  read_at
+  created_at
+}
+
+class LayoutZone {
+  id : PK
+  branch_id : FK
+  name
+  x
+  y
+  width
+  height
+  created_at
+  updated_at
+}
+
+class StockZone {
+  id : PK
+  branch_id : FK
+  name
+  x
+  y
+  width
+  height
+  created_at
+  updated_at
+}
+
+class LayoutRecommendationApplication {
+  id : PK
+  branch_id : FK
+  product_a_id : FK
+  product_b_id : FK
+  applied_by : FK
+  applied_at
+  created_at
+}
+
 Company "1" -- "*" Region
 Region "1" -- "*" Branch
 Branch "1" -- "*" Stock
@@ -500,9 +579,24 @@ Employee "1" -- "*" Sale
 Branch "1" -- "*" Sale
 Sale "1" -- "*" SaleItem
 Product "1" -- "*" SaleItem
+Sale "1" -- "*" Return
+Employee "1" -- "*" Return
+Return "1" -- "*" ReturnItem
+Product "1" -- "*" ReturnItem
+Branch "1" -- "*" StockRequest
+Product "1" -- "*" StockRequest
+Employee "1" -- "*" StockRequest
 Employee "1" -- "*" Shift
 Company "1" -- "*" CompanyFeature
 Company "1" -- "1" CompanyBranding
+Employee "1" -- "*" NotificationRead
+Product "1" -- "*" NotificationRead
+Branch "1" -- "*" NotificationRead
+Branch "1" -- "*" LayoutZone
+LayoutZone "0..1" -- "*" Stock
+Branch "1" -- "*" StockZone
+Branch "1" -- "*" LayoutRecommendationApplication
+Product "1" -- "*" LayoutRecommendationApplication
 
 @enduml
 ```
@@ -516,7 +610,7 @@ Company "1" -- "1" CompanyBranding
 - **POS / Sales:** Product lookup by barcode/SKU, sale completion (concurrency-safe), return/exchange (PIN-approved), switch-to-register for the Operations Chief.
 - **Stock Management:** Product catalog (centralized), branch-based price/stock management, central warehouse stock requests, low-stock and expiry notifications.
 - **Reporting & Layout:** Sales reports (selectable date range), best/worst/never-sold product report, co-occurrence/Apriori-based shelf layout recommendation, net profit margin (KPI) report.
-- **Account & Staff:** Hierarchical account creation, Company IT override, login-less staff records, shift management.
+- **Account & Staff:** Hierarchical account creation, deactivation and reactivation (soft delete, no dedicated UC — an extension of UC-18's account management), Company IT override, login-less staff records, shift management.
 - **Multi-Tenant:** Per-customer feature/role toggling, visual identity customization.
 - **Mobile:** Read-only companion app for the five manager roles — notifications (with read/unread tracking), sales report, top/least/never-sold report, KPI report.
 - **Later additions (post-initial SRS):** store floor-plan visualization + layout simulation score, bulk Excel product import, cross-branch quantity/sales drill-down, multi-currency conversion widget, new-customer onboarding wizard (Day-0/UC-17).
