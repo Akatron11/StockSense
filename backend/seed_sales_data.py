@@ -10,7 +10,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 from app.database import SessionLocal
-from app.models import Branch, Company, Employee, Product, Return, ReturnItem, Sale, SaleItem
+from app.models import Branch, Company, Employee, Product, Region, Return, ReturnItem, Sale, SaleItem
 
 SUBDOMAIN = "testco"
 
@@ -80,10 +80,18 @@ def main() -> None:
         if company is None:
             raise SystemExit(f"'{SUBDOMAIN}' şirketi bulunamadı — önce `python seed_test_data.py` çalıştırın.")
 
-        branch1 = db.query(Branch).filter(Branch.name == "Kadıköy Şube").one()
-        branch2 = db.query(Branch).filter(Branch.name == "Beşiktaş Şube").one()
-        cashier1 = db.query(Employee).filter(Employee.username == "cashier1").one()
-        cashier2 = db.query(Employee).filter(Employee.username == "cashier2").one()
+        branch1 = (
+            db.query(Branch).join(Region).filter(Region.company_id == company.id, Branch.name == "Kadıköy Şube").one()
+        )
+        branch2 = (
+            db.query(Branch).join(Region).filter(Region.company_id == company.id, Branch.name == "Beşiktaş Şube").one()
+        )
+        cashier1 = (
+            db.query(Employee).filter(Employee.company_id == company.id, Employee.username == "cashier1").one()
+        )
+        cashier2 = (
+            db.query(Employee).filter(Employee.company_id == company.id, Employee.username == "cashier2").one()
+        )
 
         existing_sale_ids = db.query(Sale.id).filter(Sale.branch_id.in_([branch1.id, branch2.id]))
         existing_return_ids = db.query(Return.id).filter(Return.sale_id.in_(existing_sale_ids))
