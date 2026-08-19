@@ -8,6 +8,16 @@ businesses — multi-tenant (company → region → branch), role-based access, 
 sales/returns, low-stock and expiry notifications, a co-occurrence/Apriori shelf-layout
 recommender, and a read-only mobile companion app.
 
+## Screenshots
+
+| Login | General Manager dashboard | Product catalog |
+|---|---|---|
+| ![Login](screenshots/login.png) | ![GM dashboard](screenshots/gm-dashboard.png) | ![Product catalog](screenshots/gm-product-catalog.png) |
+
+| Cashier POS | Seller Manager — store layout |
+|---|---|
+| ![POS](screenshots/pos.png) | ![Store layout](screenshots/seller-manager-layout.png) |
+
 ## Stack
 
 - **Backend:** FastAPI + PostgreSQL (SQLAlchemy 2.0, Alembic migrations)
